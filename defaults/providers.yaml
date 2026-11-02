@@ -97,7 +97,7 @@ providers:
     key_env: "GOOGLE_API_KEY|GEMINI_API_KEY"
     kind: keyed
     weight: 100
-    header: "x-goog-api-key"
+    # uses standard `Authorization: Bearer` (Google no longer accepts x-goog-api-key on this endpoint)
     notes: "Gemini free tier via AI Studio key: ~10-15 req/min, ~250 req/day (varies by model)."
 
   - name: groq
