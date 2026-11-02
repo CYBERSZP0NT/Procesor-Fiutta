@@ -1,0 +1,356 @@
+# ============================================================================
+# freellm-router — default providers (embedded data, no code changes needed)
+#
+# Every provider is a pure data entry here.  Adding a new source =
+# adding one entry below (or one `providers:` line in user config).
+# No provider name appears as a Go constant in internal/core.
+#
+# Fields:
+#   name      – unique provider id (used in route strings, config, CLI)
+#   impl      – implementation plugin to dispatch to (openailike | ollama
+#               | g4fbridge | plugin)
+#   base_url  – OpenAI-compatible base URL (trailing /v1 expected)
+#   key_env   – ENV var(s) holding the API key(s); comma-sep = multi-key
+#               rotation.  Empty = keyless.
+#   kind      – keyless | keyed | local | scraper | sidecar
+#   weight    – tie-break priority in chain ordering (higher = tried first)
+#   header    – optional non-standard auth header name (e.g. x-goog-api-key)
+#   notes     – free-tier / condition summary (shown in CLI + catalog)
+# ============================================================================
+
+providers:
+  # ── keyless / zero-auth ──────────────────────────────────────────────────
+  - name: pollinations
+    impl: openailike
+    base_url: "https://text.pollinations.ai/openai"
+    kind: keyless
+    weight: 30
+    notes: "No auth, no signup. Free LLM API. Best-effort rate limits per IP."
+
+  - name: opencode_zen
+    impl: openailike
+    base_url: "https://opencode.ai/zen/v1"
+    kind: keyless
+    weight: 25
+    notes: "34 free models (audio, reasoning, vision). No credit card."
+
+  - name: llm7
+    impl: openailike
+    base_url: "https://api.llm7.io/v1"
+    kind: keyless
+    weight: 25
+    notes: "24 free models. No credit card."
+
+  - name: kilo
+    impl: openailike
+    base_url: "https://api.kilo.ai/api/gateway"
+    kind: keyless
+    weight: 25
+    notes: "23 free models. No credit card."
+
+  - name: aionlabs
+    impl: openailike
+    base_url: "https://api.aionlabs.ai/v1"
+    kind: keyless
+    weight: 25
+    notes: "11 free models. No credit card."
+
+  - name: hf_router
+    impl: openailike
+    base_url: "https://router.huggingface.co/v1"
+    kind: keyless
+    weight: 25
+    notes: "9 free models via HuggingFace inference router."
+
+  - name: agnes
+    impl: openailike
+    base_url: "https://apihub.agnes-ai.com/v1"
+    kind: keyless
+    weight: 20
+    notes: "5 free models via Agnes AI."
+
+  - name: ovh
+    impl: openailike
+    base_url: "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1"
+    kind: keyless
+    weight: 20
+    notes: "15 free models via OVHcloud AI Endpoints."
+
+  - name: puter
+    impl: openailike
+    base_url: "https://api.puter.com/v1"
+    kind: keyless
+    weight: 20
+    notes: "Puter free LLM API. No signup required for basic access."
+
+  - name: aihorde
+    impl: openailike
+    base_url: "https://aihorde.net/api/v2"
+    kind: keyless
+    weight: 15
+    notes: "Crowdsourced distributed AI generation. Public API, free tier."
+
+  # ── key-based free tiers ─────────────────────────────────────────────────
+  - name: google
+    impl: openailike
+    base_url: "https://generativelanguage.googleapis.com/v1beta/openai"
+    key_env: "GOOGLE_API_KEY|GEMINI_API_KEY"
+    kind: keyed
+    weight: 100
+    header: "x-goog-api-key"
+    notes: "Gemini free tier via AI Studio key: ~10-15 req/min, ~250 req/day (varies by model)."
+
+  - name: groq
+    impl: openailike
+    base_url: "https://api.groq.com/openai/v1"
+    key_env: "GROQ_API_KEY"
+    kind: keyed
+    weight: 90
+    notes: "Free tier: 14,400 req/day, 1M tokens/day (per-model limits)."
+
+  - name: cerebras
+    impl: openailike
+    base_url: "https://api.cerebras.ai/v1"
+    key_env: "CEREBRAS_API_KEY"
+    kind: keyed
+    weight: 50
+    notes: "Free developer tier: ~3,000 req/day."
+
+  - name: sambanova
+    impl: openailike
+    base_url: "https://api.sambanova.ai/v1"
+    key_env: "SAMBANOVA_API_KEY"
+    kind: keyed
+    weight: 40
+    notes: "Free tier: 1,000 req/min, 750M tokens/month."
+
+  - name: mistral
+    impl: openailike
+    base_url: "https://api.mistral.ai/v1"
+    key_env: "MISTRAL_API_KEY"
+    kind: keyed
+    weight: 40
+    notes: "La Plateforme free tier: 500k tokens/month per model."
+
+  - name: zai
+    impl: openailike
+    base_url: "https://open.bigmodel.cn/api/paas/v4"
+    key_env: "ZAI_API_KEY|ZHIPU_API_KEY"
+    kind: keyed
+    weight: 35
+    notes: "Z.ai (GLM) free tier: daily request caps (RPM-limited)."
+
+  - name: openrouter
+    impl: openailike
+    base_url: "https://openrouter.ai/api/v1"
+    key_env: "OPENROUTER_API_KEY"
+    kind: keyed
+    weight: 60
+    notes: "Free ':free' models: 50 req/day, 1,000 req/month (2,000/mo with $10 lifetime credits)."
+
+  - name: nvidia
+    impl: openailike
+    base_url: "https://integrate.api.nvidia.com/v1"
+    key_env: "NVIDIA_API_KEY"
+    kind: keyed
+    weight: 35
+    notes: "NVIDIA NIM: 1,000 free requests per model (build.nvidia.com)."
+
+  - name: github_models
+    impl: openailike
+    base_url: "https://models.inference.ai.azure.com"
+    key_env: "GITHUB_TOKEN"
+    kind: keyed
+    weight: 30
+    notes: "GitHub Models: 15 req/min, 150 req/day free (free GitHub account)."
+
+  - name: cohere
+    impl: openailike
+    base_url: "https://api.cohere.com/v1"
+    key_env: "COHERE_API_KEY"
+    kind: keyed
+    weight: 30
+    notes: "Free trial key: 10 req/min, 100 req/day."
+
+  - name: cloudflare
+    impl: openailike
+    base_url: "https://api.cloudflare.com"
+    key_env: "CLOUDFLARE_API_KEY"
+    kind: keyed
+    weight: 25
+    notes: "Workers AI free: 10,000 neurons/day."
+
+  # ── MORE.md §4 new providers ─────────────────────────────────────────────
+  - name: modelscope
+    impl: openailike
+    base_url: "https://api-inference.modelscope.cn/v1"
+    key_env: "MODELSCOPE_API_KEY"
+    kind: keyed
+    weight: 25
+    notes: "61 free models via ModelScope."
+
+  - name: alibaba
+    impl: openailike
+    base_url: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+    key_env: "DASHSCOPE_API_KEY"
+    kind: keyed
+    weight: 25
+    notes: "Alibaba Cloud Model Studio (Bailian): 5 free models."
+
+  - name: siliconflow
+    impl: openailike
+    base_url: "https://api.siliconflow.cn/v1"
+    key_env: "SILICONFLOW_API_KEY"
+    kind: keyed
+    weight: 25
+    notes: "4 free models via SiliconFlow."
+
+  - name: xai
+    impl: openailike
+    base_url: "https://api.x.ai/v1"
+    key_env: "XAI_API_KEY"
+    kind: keyed
+    weight: 30
+    notes: "xAI / Grok free tier: 2-3 free models."
+
+  - name: deepseek
+    impl: openailike
+    base_url: "https://api.deepseek.com/v1"
+    key_env: "DEEPSEEK_API_KEY"
+    kind: keyed
+    weight: 35
+    notes: "DeepSeek free tier: 2 free models."
+
+  - name: chutes
+    impl: openailike
+    base_url: "https://api.chutes.ai/v1"
+    key_env: "CHUTES_API_KEY"
+    kind: keyed
+    weight: 20
+    notes: "2 free models via Chutes.ai."
+
+  - name: glhf
+    impl: openailike
+    base_url: "https://glhf.chat/api/openai/v1"
+    key_env: "GLHF_API_KEY"
+    kind: keyed
+    weight: 20
+    notes: "2 free models via Glhf.chat."
+
+  - name: ai21
+    impl: openailike
+    base_url: "https://api.ai21.com/studio/v1"
+    key_env: "AI21_API_KEY"
+    kind: keyed
+    weight: 20
+    notes: "AI21 Studio: Jamba free trial."
+
+  - name: nebius
+    impl: openailike
+    base_url: "https://api.studio.nebius.com/v1"
+    key_env: "NEBIUS_API_KEY"
+    kind: keyed
+    weight: 20
+    notes: "Nebius Studio: free trial."
+
+  - name: nscale
+    impl: openailike
+    base_url: "https://inference.api.nscale.com/v1"
+    key_env: "NSCALE_API_KEY"
+    kind: keyed
+    weight: 20
+    notes: "Nscale: 2 free models."
+
+  # ── startup-credit providers (one-shot free credits) ────────────────────
+  - name: together
+    impl: openailike
+    base_url: "https://api.together.xyz/v1"
+    key_env: "TOGETHER_API_KEY"
+    kind: keyed
+    weight: 30
+    notes: "Together AI: $5 free credits, 100+ OSS models."
+
+  - name: fireworks
+    impl: openailike
+    base_url: "https://api.fireworks.ai/inference/v1"
+    key_env: "FIREWORKS_API_KEY"
+    kind: keyed
+    weight: 30
+    notes: "Fireworks AI: $1 free credits, fast OSS inference."
+
+  - name: replicate
+    impl: openailike
+    base_url: "https://api.replicate.com/v1"
+    key_env: "REPLICATE_API_TOKEN"
+    kind: keyed
+    weight: 20
+    notes: "Replicate: $5 free credits (no card), any model incl. Flux."
+
+  - name: deepinfra
+    impl: openailike
+    base_url: "https://api.deepinfra.com/v1/openai"
+    key_env: "DEEPINFRA_API_KEY"
+    kind: keyed
+    weight: 20
+    notes: "DeepInfra: free sign-up credits, serverless inference."
+
+  - name: novita
+    impl: openailike
+    base_url: "https://api.novita.ai/v3/openai"
+    key_env: "NOVITA_API_KEY"
+    kind: keyed
+    weight: 20
+    notes: "Novita: $0.50 free credits."
+
+  - name: hyperbolic
+    impl: openailike
+    base_url: "https://api.hyperbolic.xyz/v1"
+    key_env: "HYPERBOLIC_API_KEY"
+    kind: keyed
+    weight: 20
+    notes: "Hyperbolic: free tier, OSS model hosting."
+
+  - name: aimlapi
+    impl: openailike
+    base_url: "https://api.aimlapi.com/v1"
+    key_env: "AIMLAPI_API_KEY"
+    kind: keyed
+    weight: 20
+    notes: "AIML API: 200+ models, free tier included."
+
+  # ── local / sidecar ──────────────────────────────────────────────────────
+  - name: ollama
+    impl: ollama
+    base_url: "${OLLAMA_BASE_URL:-http://localhost:11434}"
+    kind: local
+    weight: 50
+    notes: "Local inference. Unlimited while running; costs electricity only."
+
+  - name: ollama_cloud
+    impl: openailike
+    base_url: "https://ollama.com/api/v1"
+    key_env: "OLLAMA_API_KEY"
+    kind: keyed
+    weight: 30
+    notes: "Ollama Cloud: 17 free cloud models beyond local Ollama."
+
+  - name: g4f
+    impl: openailike
+    base_url: "https://api.g4f.dev/v1"
+    kind: scraper
+    weight: 40
+    notes: "Keyless scraped/public endpoints (gpt4free). Free, no account, best-effort."
+
+  - name: llmcycle
+    impl: openailike
+    base_url: "${LLMCYCLE_URL:-http://localhost:8000}"
+    kind: sidecar
+    weight: 50
+    notes: "Sidecar router you run yourself; its limits are the sum of your keys."
+
+  - name: freellmapi
+    impl: openailike
+    base_url: "${FREELLMAPI_URL:-http://localhost:5174}"
+    kind: sidecar
+    weight: 50
+    notes: "freellmapi sidecar (34 free providers, 635 free endpoints)."

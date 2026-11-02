@@ -1,0 +1,146 @@
+# ============================================================================
+# freellm-router — default routes (embedded data)
+#
+# Route format:  provider/model
+#   – the segment before the FIRST "/" is the provider name
+#   – everything after is the model ID sent to that provider's API
+#   – model IDs may themselves contain "/" (e.g. openrouter vendor/model)
+#
+# Order within a list = fallback priority (left → right).
+# Adding a new route = adding one list here (or user config overrides).
+# ============================================================================
+
+routes:
+  # ── primary aliases ──────────────────────────────────────────────────────
+  auto:
+    - google/gemini-2.5-flash
+    - groq/llama-3.3-70b-versatile
+    - deepseek/deepseek-chat
+    - openrouter/deepseek/deepseek-r1:free
+    - together/meta-llama/Llama-3.3-70B-Instruct
+    - g4f/gpt-4o-mini
+    - pollinations/gpt-4o
+    - ollama/llama3.2:3b
+
+  smart:
+    - google/gemini-2.5-pro
+    - openrouter/meta-llama/llama-3.3-70b-instruct:free
+    - groq/llama-3.3-70b-versatile
+    - deepseek/deepseek-reasoner
+    - g4f/o3-mini
+    - pollinations/o3
+    - ollama/llama3.2:3b
+
+  fast:
+    - groq/llama-3.1-8b-instant
+    - google/gemini-2.5-flash-lite
+    - cerebras/llama3.1-8b
+    - opencode_zen/llama-3.1-8b
+    - openrouter/meta-llama/llama-3.1-8b-instruct:free
+    - g4f/gpt-4o-mini
+    - pollinations/gpt-4o-mini
+    - ollama/llama3.2:1b
+
+  code:
+    - groq/llama-3.3-70b-versatile
+    - openrouter/qwen/qwen-2.5-coder-32b-instruct:free
+    - together/qwen/qwen-2.5-coder-32b-instruct
+    - fireworks/qwen2-5-coder-32b-instruct
+    - deepinfra/qwen2.5-coder-32b-instruct
+    - g4f/gpt-4o
+    - ollama/qwen2.5-coder:7b
+
+  local:
+    - ollama/llama3.2:3b
+    - g4f/gpt-4o-mini
+
+  free:
+    - g4f/gpt-4o-mini
+    - pollinations/gpt-4o
+    - opencode_zen/llama-3.1-8b
+    - llm7/llama-3.1-8b
+    - aionlabs/mistral-7b
+    - g4f/meta-llama/Meta-Llama-3.1-8B-Instruct
+    - ollama/llama3.2:3b
+
+  keyless:
+    - pollinations/gpt-4o
+    - opencode_zen/llama-3.1-8b
+    - llm7/llama-3.1-8b
+    - kilo/llama-3.1-8b
+    - aionlabs/mistral-7b
+    - hf_router/meta-llama/Llama-3.1-8B-Instruct
+    - puter/gpt-4.1-mini
+    - aihorde/StableDiffusion-v15
+    - g4f/gpt-4o-mini
+
+  credits:
+    - together/meta-llama/Llama-3.3-70B-Instruct
+    - fireworks/meta-llama/Llama-3.3-70B-Instruct
+    - deepseek/deepseek-chat
+    - xai/grok-2-latest
+    - replicate/meta/llama-3.1-8b-instruct
+    - deepinfra/meta-llama/Llama-3.3-70B-Instruct
+    - nebius/Llama-3.3-70B-Instruct
+    - ovh/meta-llama/Llama-3.1-8B-Instruct
+    - siliconflow/deepseek-ai/DeepSeek-V3
+    - g4f/gpt-4o-mini
+    - ollama/llama3.2:3b
+
+  # ── provider pass-through aliases ────────────────────────────────────────
+  # Each route contains just that provider's default best model, so
+  # `--model google` = "send to google, best model"
+  google:
+    - google/gemini-2.5-flash
+  groq:
+    - groq/llama-3.3-70b-versatile
+  openrouter:
+    - openrouter/deepseek/deepseek-r1:free
+  deepseek:
+    - deepseek/deepseek-chat
+  xai:
+    - xai/grok-2-latest
+  g4f:
+    - g4f/gpt-4o-mini
+  ollama:
+    - ollama/llama3.2:3b
+  pollinations:
+    - pollinations/gpt-4o
+  cerebras:
+    - cerebras/llama3.1-8b
+  sambanova:
+    - sambanova/Meta-Llama-3.1-70B-Instruct
+  mistral:
+    - mistral/mistral-small-latest
+  nvidia:
+    - nvidia/meta/llama-3.1-70b-instruct
+  github_models:
+    - github_models/gpt-4.1
+  cohere:
+    - cohere/command-r
+  zai:
+    - zai/glm-4-flash
+  together:
+    - together/meta-llama/Llama-3.3-70B-Instruct
+  fireworks:
+    - fireworks/meta-llama/Llama-3.3-70B-Instruct
+  deepinfra:
+    - deepinfra/meta-llama/Llama-3.3-70B-Instruct
+  modelscope:
+    - modelscope/deepseek-ai/DeepSeek-V3
+  siliconflow:
+    - siliconflow/deepseek-ai/DeepSeek-V3
+  chutes:
+    - chutes/gpt-4.1-mini
+  glhf:
+    - glhf/gpt-4.1-mini
+  nebius:
+    - nebius/Llama-3.3-70B-Instruct
+  nscale:
+    - nscale/meta-llama/Llama-3.1-8B-Instruct
+  ovh:
+    - ovh/meta-llama/Llama-3.1-8B-Instruct
+  hf_router:
+    - hf_router/meta-llama/Llama-3.1-8B-Instruct
+  aihorde:
+    - aihorde/StableDiffusion-v15
