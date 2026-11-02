@@ -1,0 +1,9 @@
+{
+  "models": [
+    {"name": "gpt-4o-mini", "provider": "freellmapi", "price": "0", "base_url": "https://freellmapi.co/v1"},
+    {"name": "deepseek-chat", "provider": "freellmapi", "price": 0, "base_url": "https://freellmapi.co/v1"},
+    {"name": "o3-pro", "provider": "freellmapi", "price": "$2/Mtok"},
+    {"id": "llama-3.3-70b", "owner": "openrouter", "free": true},
+    {"name": ""}
+  ]
+}

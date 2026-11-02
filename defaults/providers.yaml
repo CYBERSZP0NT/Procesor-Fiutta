@@ -345,6 +345,7 @@ providers:
     impl: openailike
     base_url: "${LLMCYCLE_URL:-http://localhost:8000}"
     kind: sidecar
+    allow_insecure_upstream: true  # local sidecar: loopback base_url is the point
     weight: 50
     notes: "Sidecar router you run yourself; its limits are the sum of your keys."
 
@@ -352,5 +353,6 @@ providers:
     impl: openailike
     base_url: "${FREELLMAPI_URL:-http://localhost:5174}"
     kind: sidecar
+    allow_insecure_upstream: true  # local sidecar: loopback base_url is the point
     weight: 50
     notes: "freellmapi sidecar (34 free providers, 635 free endpoints)."

@@ -10,7 +10,7 @@ import (
 // Group 1 = VAR name for simple case; group 2 = VAR name, group 3 = default.
 var envVarRE = regexp.MustCompile(
 	`\$\{([A-Za-z_][A-Za-z0-9_]*)\}` + "|" + // ${VAR}
-	`\$\{([A-Za-z_][A-Za-z0-9_]*):-([^}]+)\}`, // ${VAR:-default}
+		`\$\{([A-Za-z_][A-Za-z0-9_]*):-([^}]+)\}`, // ${VAR:-default}
 )
 
 // expandString replaces ${VAR} and ${VAR:-default} occurrences with the

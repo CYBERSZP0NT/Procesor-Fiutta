@@ -1,0 +1,4 @@
+Warning: No project session found with id 'step-2-10094'; creating a new session with that id.
+**Status: ✅ ok** — STEP 2 is complete. `go build ./...`, `go vet ./...`, and `go test -race ./...` are all green (84 tests, 0 failures, 0 data races). The OpenAI-like provider with full SSE streaming, the router engine with fallback/cooldown/key-rotation/retry, the default route policy, and the `pkg/router` public API are all built and tested. The only contract deviation was adding a `Provider string` field to `core.Model` (needed for provider-bound route entries).
+
+**Next step should verify first:** that `pkg/router.New(cfg).Route(ctx, selector, messages, model, sink)` is the correct and complete surface for the CLI to build on — the `chat` command in STEP 3 should wire Cobra → `pkg/router` with a TTY-aware stream sink, and `models` should call `Provider.Models(ctx)` (already implemented in openailike via GET /models).

@@ -1,1 +1,9 @@
 Warning: No project session found with id 'step-1-22118'; creating a new session with that id.
+**Status: ✅ STEP 1 complete — all gates green.**
+
+`go build ./...`, `go vet ./...`, and `go test -race ./...` all pass. 55 test cases, 0 failures. 43 providers and 35 routes are pure YAML data (no provider name appears as a Go constant in `internal/core`). The domain contract (`Provider`, `ChatRequest`, `StreamOut`/`StreamDone`, `UpstreamErr`, `CooldownStore`, `KeySource`, `RoutePolicy`) and the config 3-layer merge (`embedded → user file → env` + `${VAR:-default}` expansion + `Validate()`) are in place and tested.
+
+**Next step (STEP 2) should verify first:**
+1. `core.Provider` interface is ready for `internal/providers/openailike` to implement (`Name`, `Models`, `Stream`, `Available`, `Kinds` — no new core types needed).
+2. `config.Provider.Header` field is populated for `google` (`x-goog-api-key`) — the openailike client must use it when setting auth.
+3. `core.UpstreamErr` + `errors.Is` chain is already working — the openailike provider should wrap every HTTP error into it before returning from `Stream`.

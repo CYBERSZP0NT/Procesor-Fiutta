@@ -58,7 +58,7 @@ install: ## Install to GOPATH/bin or /usr/local/bin
 	@echo "Installed freellm-router to $(shell go env GOPATH)/bin"
 
 .PHONY: release
-release: ## Cross-compile release binaries into dist/
+release: ## Cross-compile release binaries into dist/ + SHA256SUMS
 	@echo "Building release binaries…"
 	@mkdir -p dist/linux-amd64 dist/linux-arm64 dist/darwin-amd64 dist/darwin-arm64 dist/windows-amd64
 	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/linux-amd64/$(BINARY)   $(CMD)
@@ -66,7 +66,8 @@ release: ## Cross-compile release binaries into dist/
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/darwin-amd64/$(BINARY) $(CMD)
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o dist/darwin-arm64/$(BINARY) $(CMD)
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/windows-amd64/$(BINARY).exe $(CMD)
-	@echo "Done. Binaries in ./dist/"
+	@cd dist && (sha256sum linux-amd64/$(BINARY) linux-arm64/$(BINARY) darwin-amd64/$(BINARY) darwin-arm64/$(BINARY) windows-amd64/$(BINARY).exe > SHA256SUMS 2>/dev/null || shasum -a 256 linux-amd64/$(BINARY) linux-arm64/$(BINARY) darwin-amd64/$(BINARY) darwin-arm64/$(BINARY) windows-amd64/$(BINARY).exe > SHA256SUMS)
+	@echo "Done. Binaries + SHA256SUMS in ./dist/"
 
 .PHONY: help
 help: ## Show this help

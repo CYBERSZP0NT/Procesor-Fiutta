@@ -85,6 +85,7 @@ providers:
     base_url: "http://localhost:9999/v1"
     key_env: "CUSTOM_KEY"
     kind: keyed
+    allow_insecure_upstream: true
     weight: 1
 `
 	path := writeConfig(t, userYAML)
@@ -126,6 +127,7 @@ providers:
     impl: openailike
     base_url: "http://localhost:4242/v1"
     kind: sidecar
+    allow_insecure_upstream: true
     weight: 5
 `
 	path := writeConfig(t, userYAML)
@@ -485,4 +487,3 @@ func indexOf(s, substr string) int {
 	}
 	return -1
 }
-

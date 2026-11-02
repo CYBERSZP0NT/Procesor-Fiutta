@@ -85,6 +85,16 @@ func (s *EnvKeySource) RedactedKeys(ctx context.Context, provider string) []stri
 	return out
 }
 
+// RedactKey truncates a single API key so secrets never appear in full in
+// error messages, logs, metrics or the usage journal (first-4 + … + last-2).
+// Empty keys redact to empty.
+func RedactKey(k string) string {
+	if k == "" {
+		return ""
+	}
+	return redactKey(k)
+}
+
 func redactKey(k string) string {
 	if len(k) <= 6 {
 		return "***"

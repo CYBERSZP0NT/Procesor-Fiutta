@@ -2,9 +2,10 @@
 // shared across every other package in freellm-router.
 //
 // Design rules (see AGENTS.md):
-//   – No provider name appears as a constant here.
-//   – Every function takes context.Context first.
-//   – Errors are wrapped with fmt.Errorf("%w") into *UpstreamErr.
+//
+//	– No provider name appears as a constant here.
+//	– Every function takes context.Context first.
+//	– Errors are wrapped with fmt.Errorf("%w") into *UpstreamErr.
 package core
 
 import (
@@ -20,12 +21,12 @@ import (
 type Kind string
 
 const (
-	KindKeyless   Kind = "keyless"   // no API key required at all
-	KindKeyed     Kind = "keyed"     // requires an API key from KeySource
-	KindLocal     Kind = "local"     // runs on local hardware (e.g. ollama)
-	KindScraper   Kind = "scraper"   // keyless scraped / reverse-engineered web
-	KindSidecar   Kind = "sidecar"   // another router/sidecar (freellmapi, etc.)
-	KindPlugin    Kind = "plugin"    // external subprocess (pluginproc)
+	KindKeyless Kind = "keyless" // no API key required at all
+	KindKeyed   Kind = "keyed"   // requires an API key from KeySource
+	KindLocal   Kind = "local"   // runs on local hardware (e.g. ollama)
+	KindScraper Kind = "scraper" // keyless scraped / reverse-engineered web
+	KindSidecar Kind = "sidecar" // another router/sidecar (freellmapi, etc.)
+	KindPlugin  Kind = "plugin"  // external subprocess (pluginproc)
 )
 
 // TierInfo holds free-tier metadata for a model (display only, not enforced).
@@ -36,11 +37,15 @@ type TierInfo struct {
 }
 
 // Model represents one routable model (across a provider).
+// When Provider is non-empty the model is bound to a specific provider
+// instance (i.e. it is a route entry); when empty it is a generic catalog
+// entry not yet associated with a provider.
 type Model struct {
-	ID    string `json:"id"`
-	Name  string `json:"name,omitempty"`
-	Kinds []Kind `json:"kinds,omitempty"`
-	Tier  TierInfo `json:"tier,omitempty"`
+	Provider string   `json:"provider,omitempty"`
+	ID       string   `json:"id"`
+	Name     string   `json:"name,omitempty"`
+	Kinds    []Kind   `json:"kinds,omitempty"`
+	Tier     TierInfo `json:"tier,omitempty"`
 }
 
 // ---------------------------------------------------------------------------
@@ -50,11 +55,11 @@ type Model struct {
 // Availability is returned by Provider.Available and reflects whether
 // the provider is callable right now.
 type Availability struct {
-	OK      bool          `json:"ok"`
-	Reason  string        `json:"reason,omitempty"` // human-readable why
-	KeyCount int          `json:"key_count,omitempty"`
-	Up      bool          `json:"up,omitempty"`     // optional reachability probe
-	Latency time.Duration `json:"latency,omitempty"`
+	OK       bool          `json:"ok"`
+	Reason   string        `json:"reason,omitempty"` // human-readable why
+	KeyCount int           `json:"key_count,omitempty"`
+	Up       bool          `json:"up,omitempty"` // optional reachability probe
+	Latency  time.Duration `json:"latency,omitempty"`
 }
 
 // Provider is one routable inference source.
@@ -107,9 +112,9 @@ type Message struct {
 
 // ToolCall represents a function call the model requested.
 type ToolCall struct {
-	ID        string       `json:"id"`
-	Type      string       `json:"type"` // always "function"
-	Function  ToolFunction `json:"function"`
+	ID       string       `json:"id"`
+	Type     string       `json:"type"` // always "function"
+	Function ToolFunction `json:"function"`
 }
 
 type ToolFunction struct {
@@ -132,19 +137,19 @@ type FunctionDef struct {
 // ChatRequest is everything needed to send one chat-completion request
 // to any upstream, regardless of provider.
 type ChatRequest struct {
-	Model        string     `json:"model"`
-	Messages     []Message  `json:"messages"`
-	MaxTokens    int        `json:"max_tokens,omitempty"`
-	Temperature  *float64   `json:"temperature,omitempty"`
-	TopP         *float64   `json:"top_p,omitempty"`
-	Tools        []ToolDef  `json:"tools,omitempty"`
-	ToolChoice   *ToolChoice `json:"tool_choice,omitempty"`
-	Stream       bool       `json:"stream"`
-	ResponseFmt  string     `json:"response_format,omitempty"`
+	Model       string      `json:"model"`
+	Messages    []Message   `json:"messages"`
+	MaxTokens   int         `json:"max_tokens,omitempty"`
+	Temperature *float64    `json:"temperature,omitempty"`
+	TopP        *float64    `json:"top_p,omitempty"`
+	Tools       []ToolDef   `json:"tools,omitempty"`
+	ToolChoice  *ToolChoice `json:"tool_choice,omitempty"`
+	Stream      bool        `json:"stream"`
+	ResponseFmt string      `json:"response_format,omitempty"`
 }
 
 type ToolChoice struct {
-	Type     string `json:"type"` // "auto" | "none" | "required" | "function"
+	Type     string        `json:"type"` // "auto" | "none" | "required" | "function"
 	Function *ToolChoiceFn `json:"function,omitempty"`
 }
 
@@ -155,16 +160,21 @@ type ToolChoiceFn struct {
 // StreamOut carries the sinks a provider writes to during streaming.
 // All sinks are optional — the provider only calls the relevant ones.
 type StreamOut struct {
-	TextSink      func(string)      // text delta callback
-	ToolSink      func(ToolCall)    // incremental tool-call chunk
-	ReasoningSink func(string)      // reasoning / thinking text
-	ErrSink       func(error)       // non-fatal upstream error notice
+	TextSink      func(string)   // text delta callback
+	ToolSink      func(ToolCall) // incremental tool-call chunk
+	ReasoningSink func(string)   // reasoning / thinking text
+	ErrSink       func(error)    // non-fatal upstream error notice
+	// Serving is called once per stream attempt that delivers its first
+	// delta, with the "provider/model" via label of the provider that is
+	// streaming. Optional — used by the HTTP server to set the
+	// X-Freellm-Routed-Via header as soon as the first byte is committed.
+	Serving func(via string)
 }
 
 // StreamDone is returned by Provider.Stream after the full response has
 // been delivered through the StreamOut sinks.
 type StreamDone struct {
-	FinishReason     string `json:"finish_reason"` // "stop"|"length"|"tool_calls"|"content_filter"|…
+	FinishReason     string `json:"finish_reason"`     // "stop"|"length"|"tool_calls"|"content_filter"|…
 	PromptTokens     int    `json:"prompt_tokens"`     // -1 when upstream does not report
 	CompletionTokens int    `json:"completion_tokens"` // -1 when upstream does not report
 }
@@ -230,6 +240,10 @@ type CooldownStore interface {
 
 	// ForgetAll removes all entries (useful for tests / admin reset).
 	ForgetAll(ctx context.Context)
+
+	// Labels returns all labels currently tracked (with or without active
+	// cooldown) for inspection (health endpoints, /v1/health).
+	Labels() []string
 }
 
 // ---------------------------------------------------------------------------
@@ -247,6 +261,12 @@ type ModelNote struct {
 // The router merges results from multiple sources (embedded, live, remote).
 type CatalogSource interface {
 	Fetch(ctx context.Context) []ModelNote
+}
+
+// ProviderLister is OPTIONAL: a catalog source that can also enumerate
+// complete provider entries (base URL, kind, …). `discover` uses this.
+type ProviderLister interface {
+	ProviderList(ctx context.Context) ([]ProviderSpec, error)
 }
 
 // ---------------------------------------------------------------------------

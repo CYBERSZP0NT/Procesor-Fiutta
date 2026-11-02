@@ -1,0 +1,8 @@
+{
+  "entries": [
+    {"model": "gpt-4o-mini", "provider": "freellmapi", "status": "up", "latency_ms": 412},
+    {"model": "llama-3.3-70b-versatile", "provider": "groq", "state": "down"},
+    {"model": "gemini-2.5-flash", "provider": "google", "status": 1},
+    {"name": "o3", "source": "openrouter", "status": false}
+  ]
+}

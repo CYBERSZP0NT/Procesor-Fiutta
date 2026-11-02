@@ -313,8 +313,8 @@ func TestToolTypes(t *testing.T) {
 	}
 
 	tc := ToolCall{
-		ID:    "call-123",
-		Type:  "function",
+		ID:   "call-123",
+		Type: "function",
 		Function: ToolFunction{
 			Name:      "get_weather",
 			Arguments: `{"location":"SF"}`,

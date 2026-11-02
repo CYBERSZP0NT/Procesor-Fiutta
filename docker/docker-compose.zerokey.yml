@@ -1,0 +1,73 @@
+# freellm-router — ZERO-KEY stack (the headline demo).
+#
+#   docker compose -f docker/docker-compose.zerokey.yml up --build
+#
+# → g4f sidecar (keyless scrape of public UIs) + python-example plugin
+#   (reference stdio JSON-RPC provider) + the router. No account, no key,
+#   one command. Then:
+#
+#   curl -s http://localhost:8787/v1/chat/completions \
+#     -H 'content-type: application/json' \
+#     -d '{"model":"free","messages":[{"role":"user","content":"hi"}]}'
+#
+# or the OpenAI SDK:
+#   OpenAI(base_url="http://localhost:8787/v1", api_key="x")
+
+name: freellm-zerokey
+
+services:
+  router:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: freellm-router:local
+    ports:
+      - "8787:8787"
+    environment:
+      G4F_URL: http://g4f:5000
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - zerokey-config:/config
+      - usage:/data
+    depends_on:
+      - g4f
+      - plugin
+    restart: unless-stopped
+
+  # g4f (gpt4free) server — keyless inference backend.
+  g4f:
+    image: ghcr.io/ai-zen/gpt4free:latest
+    command: [ "g4f", "--host", "0.0.0.0", "--port", "5000" ]
+    restart: unless-stopped
+
+  # Reference external plugin: a Python process speaking the stdio JSON-RPC
+  # protocol (docs/plugin-protocol.md). The router spawns it per config.
+  plugin:
+    image: python:3.12-slim
+    working_dir: /plugins
+    command: ["python", "-u", "plugins/python-example/plugin.py"]
+    restart: unless-stopped
+    # NOTE: the plugin is a *child process of the router*, not a network
+    # service — this container's job is only to prove the image/toolchain;
+    # the actual plugin is launched by the router via its config entry:
+    #
+    #   providers:
+    #     - name: python-example
+    #       impl: plugin
+    #       kind: plugin
+    #       command: ["python", "-u", "/plugins/plugin.py"]
+    #   routes:
+    #     free: [g4f/gpt-4o-mini, python-example/hello]
+
+  # Local model (optional; uncomment for a truly offline node).
+  ollama:
+    image: ollama/ollama:latest
+    network_mode: host
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  zerokey-config:
+  usage:
+  ollama:

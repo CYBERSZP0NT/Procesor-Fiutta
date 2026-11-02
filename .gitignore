@@ -19,3 +19,4 @@ Thumbs.db
 freellm-router
 dist/
 *.exe
+bin/   # built plugin binaries

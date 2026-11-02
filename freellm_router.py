@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+# =============================================================================
+# LEGACY — DEPRECATED (freellm-router v1.0.0-rc1, 2026-11-02)
+#
+# This file is kept ONLY as a behavioral reference. The live implementation
+# is the Go binary `freellm-router` (see README.md). If you are reading this
+# for how something behaves, it is still a decent spec — but run the Go
+# router, not this script.
+#
+#   make install          # or: curl installer / docker compose (see README)
+#   freellm-router serve  # OpenAI-compatible API on :8787
+# =============================================================================
 """
 freellm_router.py — one router over your entire free-LLM estate.
 =================================================================

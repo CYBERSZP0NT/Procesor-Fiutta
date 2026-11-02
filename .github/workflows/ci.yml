@@ -1,0 +1,110 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test (+ race on Linux)
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            go test -race -count=1 ./...
+          else
+            go test -count=1 ./...
+          fi
+
+      - name: "Smoke: serve + models + health (keyless embedded defaults)"
+        shell: bash
+        env:
+          # Keep the smoke deterministic: only point the router at a local fake.
+          G4F_URL: "http://127.0.0.1:1" # unreachable on purpose for keyless g4f
+        run: |
+          go build -o freellm-router ./cmd/freellm-router
+          ./freellm-router config validate
+          ./freellm-router serve --port 18080 >/tmp/srv.log 2>&1 &
+          SRV=$!
+          sleep 1
+          curl -fsS "http://127.0.0.1:18080/v1/models" >/dev/null
+          curl -fsS "http://127.0.0.1:18080/v1/health"  >/dev/null
+          kill $SRV || true
+
+  plugins:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27", cache: true }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: "go-example plugin: build + smoke handshake"
+        shell: bash
+        run: |
+          go build -C plugins/go-example -o /tmp/go-example .
+          python3 - <<'PY'
+          import json, subprocess
+          p = subprocess.Popen(["/tmp/go-example"], stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE, text=True)
+          p.stdin.write(json.dumps({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}})+"\n")
+          p.stdin.flush()
+          line = p.stdout.readline()
+          r = json.loads(line)
+          assert r.get("result"), r
+          p.stdin.write(json.dumps({"jsonrpc":"2.0","id":2,"method":"shutdown","params":{}})+"\n")
+          p.stdin.flush()
+          p.wait(timeout=5)
+          print("go-example initialize OK:", r["result"])
+          PY
+
+      - name: "python-example plugin: smoke handshake"
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          p = subprocess.Popen(["python3","plugins/python-example/plugin.py"],
+                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+          p.stdin.write(json.dumps({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}})+"\n")
+          p.stdin.flush()
+          r = json.loads(p.stdout.readline()); assert r.get("result"), r
+          p.stdin.write(json.dumps({"jsonrpc":"2.0","id":2,"method":"models","params":{}})+"\n")
+          p.stdin.flush()
+          m = json.loads(p.stdout.readline()); assert m.get("result"), m
+          p.stdin.write(json.dumps({"jsonrpc":"2.0","id":3,"method":"stream","params":{
+              "model":"hello","messages":[{"role":"user","content":"hi"}],"stream":True}})+"\n")
+          p.stdin.flush()
+          got_text = False
+          while True:
+              ln = p.stdout.readline()
+              if not ln: break
+              msg = json.loads(ln)
+              if msg.get("method") == "notification/streams/text_delta":
+                  assert msg["params"].get("text"); got_text = True
+              if "id" in msg:
+                  break
+          assert got_text
+          p.stdin.close(); p.wait(timeout=5)
+          print("python-example stream OK")
+          PY

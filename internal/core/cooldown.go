@@ -10,8 +10,8 @@ import (
 // InMemCooldown is the default CooldownStore: a mutex-guarded in-memory map
 // of label → deadline. Zero dependencies, trivially testable.
 type InMemCooldown struct {
-	mu   sync.RWMutex
-	m    map[string]time.Time
+	mu sync.RWMutex
+	m  map[string]time.Time
 }
 
 var _ CooldownStore = (*InMemCooldown)(nil)

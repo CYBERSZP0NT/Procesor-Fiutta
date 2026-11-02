@@ -1,0 +1,58 @@
+# freellm-router — standard stack (router + optional sidecars).
+#
+#   docker compose -f docker/docker-compose.yml up --build
+#
+# The router is OpenAI-compatible at http://localhost:8787/v1.
+# Sidecars (g4f, llmcycle, ollama) are commented out — enable the ones you
+# run. All of them are optional; the router works fully standalone for any
+# remote provider you put keys for.
+
+name: freellm-router
+
+services:
+  router:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: freellm-router:local
+    ports:
+      - "8787:8787"
+    environment:
+      # Free-tier keys — uncomment / fill as needed (all optional).
+      # GROQ_API_KEY:  ${GROQ_API_KEY:-}
+      # GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      # OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      # Remote sidecars reachable only from inside this network:
+      G4F_URL: http://g4f:5000
+      # LLMCYCLE_URL: http://llmcycle:8000
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - config:/config
+      - usage:/data   # usage journal persists here
+    depends_on:
+      - g4f
+      - ollama
+    restart: unless-stopped
+
+  # Keyless g4f (gpt4free) sidecar — the "zero-key" fallback.
+  g4f:
+    image: ghcr.io/ai-zen/gpt4free:latest   # any g4f image works
+    command: [ "g4f", "--host", "0.0.0.0", "--port", "5000" ]
+    ports:
+      - "5000:5000"   # expose on the host too if you want direct access
+    restart: unless-stopped
+
+  # Local Ollama — host network (it manages its own GPU/model cache).
+  ollama:
+    image: ollama/ollama:latest
+    network_mode: host
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+    # Pull a small default model once it's up:
+    #   docker compose exec ollama ollama pull llama3.2:3b
+
+volumes:
+  config:
+  usage:
+  ollama:

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "pollinations",
+    "url": "https://text.pollinations.ai/openai",
+    "key_required": false,
+    "models": ["gpt-4o", "o3", "llama-3.1-8b"]
+  },
+  {
+    "name": "deepseek",
+    "base_url": "https://api.deepseek.com/v1",
+    "key": true,
+    "models": "deepseek-chat, deepseek-reasoner"
+  },
+  {
+    "name": "hf-inference",
+    "endpoint": "https://router.huggingface.co/v1",
+    "auth": "no",
+    "models": ["meta-llama/Llama-3.1-8B-Instruct"]
+  },
+  {"url": ""},
+  {"name": "mystery", "url": "https://x.example/v1", "models": []}
+]

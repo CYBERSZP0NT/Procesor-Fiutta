@@ -1,2 +1,70 @@
 ============================================================
 [32mSTEP 1  (fresh context, model: srchmnmichael/Qwen3.8-Uncensored:q4_K_M, ctx: 131072, thinking: high)[0m
+
+[32mSTEP 1 finished (exit 0)[0m
+    | Warning: No project session found with id 'step-1-22118'; creating a new session with that id.
+    | **Status: ✅ STEP 1 complete — all gates green.**
+    | 
+    | `go build ./...`, `go vet ./...`, and `go test -race ./...` all pass. 55 test cases, 0 failures. 43 providers and 35 routes are pure YAML data (no provider name appears as a Go constant in `internal/core`). The domain contract (`Provider`, `ChatRequest`, `StreamOut`/`StreamDone`, `UpstreamErr`, `CooldownStore`, `KeySource`, `RoutePolicy`) and the config 3-layer merge (`embedded → user file → env` + `${VAR:-default}` expansion + `Validate()`) are in place and tested.
+    | 
+    | **Next step (STEP 2) should verify first:**
+    | 1. `core.Provider` interface is ready for `internal/providers/openailike` to implement (`Name`, `Models`, `Stream`, `Available`, `Kinds` — no new core types needed).
+    | 2. `config.Provider.Header` field is populated for `google` (`x-goog-api-key`) — the openailike client must use it when setting auth.
+    | 3. `core.UpstreamErr` + `errors.Is` chain is already working — the openailike provider should wrap every HTTP error into it before returning from `Stream`.
+[32m  verify: go build ./... OK[0m
+[32m  verify: go test ./... OK[0m
+  model unloaded; next step starts clean.
+============================================================
+[32mSTEP 2  (fresh context, model: srchmnmichael/Qwen3.8-Uncensored:q4_K_M, ctx: 131072, thinking: high)[0m
+
+[32mSTEP 2 finished (exit 0)[0m
+    | Warning: No project session found with id 'step-2-10094'; creating a new session with that id.
+    | **Status: ✅ ok** — STEP 2 is complete. `go build ./...`, `go vet ./...`, and `go test -race ./...` are all green (84 tests, 0 failures, 0 data races). The OpenAI-like provider with full SSE streaming, the router engine with fallback/cooldown/key-rotation/retry, the default route policy, and the `pkg/router` public API are all built and tested. The only contract deviation was adding a `Provider string` field to `core.Model` (needed for provider-bound route entries).
+    | 
+    | **Next step should verify first:** that `pkg/router.New(cfg).Route(ctx, selector, messages, model, sink)` is the correct and complete surface for the CLI to build on — the `chat` command in STEP 3 should wire Cobra → `pkg/router` with a TTY-aware stream sink, and `models` should call `Provider.Models(ctx)` (already implemented in openailike via GET /models).
+[32m  verify: go build ./... OK[0m
+[32m  verify: go test ./... OK[0m
+  model unloaded; next step starts clean.
+============================================================
+[32mSTEP 3  (fresh context, model: srchmnmichael/Qwen3.8-Uncensored:q4_K_M, ctx: 131072, thinking: high)[0m
+
+[32mSTEP 3 finished (exit 0)[0m
+    | Warning: No project session found with id 'step-3-25356'; creating a new session with that id.
+    | **STEP 3 complete.** The Cobra CLI is fully implemented with all required subcommands (`chat`, `models`, `probe`, `providers`, `notes`, `config`, `serve` stub), global flags (`--config`, `--provider`, `--model`, `--timeout`, `--json`), 20 tests (all green, race-safe), and `go build/vet/test` pass cleanly. `make install` produces a working binary. The `serve` command is registered with its flags so STEP 4 can slot in the real HTTP server without renaming anything. **For STEP 4, verify first:** that `internal/server` can reuse `buildRouter()` from `internal/cli/helpers.go` (or replicate the `config.Config` → `pkg/router.Router` wiring) and that the `serve` command's existing flags (`--host`, `--port`, `--cert`, `--key`, `--max-body-bytes`, `--once`) are sufficient for the middleware chain spec.
+[32m  verify: go build ./... OK[0m
+[32m  verify: go test ./... OK[0m
+  model unloaded; next step starts clean.
+============================================================
+[32mSTEP 4  (fresh context, model: srchmnmichael/Qwen3.8-Uncensored:q4_K_M, ctx: 131072, thinking: high)[0m
+
+[31mSTEP 4 TIMED OUT after 5400s (exit 124)[0m
+    | Warning: No project session found with id 'step-4-14683'; creating a new session with that id.
+[32m  verify: go build ./... OK[0m
+[32m  verify: go test ./... OK[0m
+  model unloaded; next step starts clean.
+============================================================
+[32mSTEP 5  (fresh context, model: srchmnmichael/Qwen3.8-Uncensored:q4_K_M, ctx: 131072, thinking: high)[0m
+
+[31mSTEP 5 TIMED OUT after 5400s (exit 124)[0m
+    | Warning: No project session found with id 'step-5-9804'; creating a new session with that id.
+[32m  verify: go build ./... OK[0m
+[33m  verify: go test has failures (may be acceptable mid-step; read PROGRESS.md)[0m
+  model unloaded; next step starts clean.
+============================================================
+[32mSTEP 6  (fresh context, model: srchmnmichael/Qwen3.8-Uncensored:q4_K_M, ctx: 131072, thinking: high)[0m
+
+[31mSTEP 6 TIMED OUT after 5400s (exit 124)[0m
+    | Warning: No project session found with id 'step-6-21336'; creating a new session with that id.
+[32m  verify: go build ./... OK[0m
+[32m  verify: go test ./... OK[0m
+  model unloaded; next step starts clean.
+============================================================
+[32mSTEP 7  (fresh context, model: srchmnmichael/Qwen3.8-Uncensored:q4_K_M, ctx: 131072, thinking: high)[0m
+
+[31mSTEP 7 TIMED OUT after 5400s (exit 124)[0m
+    | Warning: No project session found with id 'step-7-29490'; creating a new session with that id.
+[32m  verify: go build ./... OK[0m
+[33m  verify: go test has failures (may be acceptable mid-step; read PROGRESS.md)[0m
+  model unloaded; next step starts clean.
+============================================================
+[32mSTEP 8  (fresh context, model: srchmnmichael/Qwen3.8-Uncensored:q4_K_M, ctx: 131072, thinking: high)[0m
