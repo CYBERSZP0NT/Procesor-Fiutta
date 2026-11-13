@@ -17,10 +17,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/silverx/szmelc-router/defaults"
-	"github.com/silverx/szmelc-router/internal/agentic"
-	"github.com/silverx/szmelc-router/internal/appdir"
-	"github.com/silverx/szmelc-router/internal/control"
+	"github.com/CYBERSZP0NT/szmelc-router/defaults"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/agentic"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/appdir"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/control"
 	"gopkg.in/yaml.v3"
 )
 

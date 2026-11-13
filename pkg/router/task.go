@@ -9,8 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/silverx/szmelc-router/internal/agentic"
-	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/agentic"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/core"
 )
 
 // TaskSpec is the agentic task-router configuration (catalog, roles, rules).

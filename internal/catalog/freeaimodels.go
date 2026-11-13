@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/core"
 )
 
 // DEFAULT_FREE_AI_MODELS_URL is the ClawLabsAI/free-ai-models daily status

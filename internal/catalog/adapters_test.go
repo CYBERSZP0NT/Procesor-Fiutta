@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/core"
 )
 
 // serveFile spins up an httptest server returning the given file with

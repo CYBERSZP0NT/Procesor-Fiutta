@@ -11,7 +11,7 @@
 //
 //	import (
 //	    "log"
-//	    "github.com/silverx/szmelc-router/pkg/pluginhost"
+//	    "github.com/CYBERSZP0NT/szmelc-router/pkg/pluginhost"
 //	)
 //
 //	func main() {

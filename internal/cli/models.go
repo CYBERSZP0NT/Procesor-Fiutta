@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
 )
 
 type modelsOpts struct {

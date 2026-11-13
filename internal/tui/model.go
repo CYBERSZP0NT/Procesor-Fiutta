@@ -10,10 +10,10 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/silverx/szmelc-router/internal/control"
-	"github.com/silverx/szmelc-router/internal/ledger"
-	"github.com/silverx/szmelc-router/internal/usage"
-	"github.com/silverx/szmelc-router/pkg/router"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/control"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/ledger"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/usage"
+	"github.com/CYBERSZP0NT/szmelc-router/pkg/router"
 )
 
 type tab int

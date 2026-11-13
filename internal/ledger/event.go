@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/appdir"
-	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/appdir"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/core"
 )
 
 // Event kinds.

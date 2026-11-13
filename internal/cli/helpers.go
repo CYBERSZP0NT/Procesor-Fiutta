@@ -3,8 +3,8 @@ package cli
 import (
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/config"
-	"github.com/silverx/szmelc-router/pkg/router"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/pkg/router"
 )
 
 // buildRouter constructs a *router.Router from the loaded config.

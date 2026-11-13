@@ -1,7 +1,7 @@
 # szmelc-router
 
-[![CI](https://github.com/CYBERSZP0NT/Procesor-Fiutta/actions/workflows/ci.yml/badge.svg)](https://github.com/CYBERSZP0NT/Procesor-Fiutta/actions/workflows/ci.yml)
-![Go](https://img.shields.io/github/go-mod/go-version/CYBERSZP0NT/Procesor-Fiutta)
+[![CI](https://github.com/CYBERSZP0NT/szmelc-router/actions/workflows/ci.yml/badge.svg)](https://github.com/CYBERSZP0NT/szmelc-router/actions/workflows/ci.yml)
+![Go](https://img.shields.io/github/go-mod/go-version/CYBERSZP0NT/szmelc-router)
 ![OpenAI-compatible](https://img.shields.io/badge/API-OpenAI--compatible-412991)
 ![Task router](https://img.shields.io/badge/routing-agentic%20task%20router-2ea44f)
 ![TUI](https://img.shields.io/badge/TUI-interactive-A78BFA)
@@ -18,7 +18,8 @@ Open WebUI, LibreChat, scripts) at it.
 
 - `freellm_router.py` is the **legacy reference implementation** (kept for
   behavior comparison). The Go binary is the product.
-- Formerly **freellm-router**. The old name still works: `make install` and
+- Formerly **freellm-router**, in the repo formerly named `Procesor-Fiutta`
+  (old GitHub URLs redirect). The old name still works: `make install` and
   the Docker image add a `freellm-router` symlink, and an existing
   `~/.config/freellm/` (or `~/.local/share/freellm/`, `~/.cache/freellm/`)
   is used until a `szmelc/` one exists. `FREELLM_*` env vars and
@@ -32,6 +33,7 @@ Open WebUI, LibreChat, scripts) at it.
 ```bash
 # 1) get the binary (pick one)
 make install                                   # go install
+#   or: go install github.com/CYBERSZP0NT/szmelc-router/cmd/szmelc-router@latest
 #   or: docker compose -f docker/docker-compose.yml up --build
 #   or: download a static binary from a release tag (dist/ layout)
 

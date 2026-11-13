@@ -3,7 +3,7 @@ package catalog
 import (
 	"encoding/json"
 
-	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/core"
 )
 
 // DEFAULT_FREELLM_API_URL is the signed public catalog of freellmapi.co.

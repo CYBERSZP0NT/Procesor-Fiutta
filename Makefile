@@ -2,7 +2,7 @@
 # Targets: build, test, lint, clean, install, release
 
 BINARY      ?= szmelc-router
-PKG         := github.com/silverx/szmelc-router
+PKG         := github.com/CYBERSZP0NT/szmelc-router
 CMD         := ./cmd/szmelc-router
 GOBIN_DIR   := $(or $(shell go env GOBIN),$(shell go env GOPATH)/bin)
 VERSION     := $(shell git describe --tags --always 2>/dev/null || echo dev)

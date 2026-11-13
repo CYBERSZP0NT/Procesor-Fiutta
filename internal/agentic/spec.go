@@ -17,7 +17,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/silverx/szmelc-router/defaults"
+	"github.com/CYBERSZP0NT/szmelc-router/defaults"
 )
 
 // Spec is the whole task-router configuration.
