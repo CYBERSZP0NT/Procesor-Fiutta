@@ -7,6 +7,19 @@ non-streaming), and the `model` field accepts a route alias (`auto`, `free`,
 
 Base URL used below: `http://localhost:8787/v1`.
 
+## Any script, harness or agent (no code changes)
+
+```bash
+eval "$(freellm-router env --session my-run)"        # OPENAI_BASE_URL/API_BASE/API_KEY → the router
+freellm-router wrap --profile auto -- python agent.py   # run it as one tracked session
+answer=$(freellm-router exec -q "…") || exit $?        # one-shot from shell (exit 0/1/2/3)
+```
+
+`--profile auto` is infinite and fully automatic. `--profile control` gives
+you exact control, and pre-call hooks can veto calls. Every call shows up in
+`freellm-router history --session my-run` and in `freellm-router tui`.
+Details: [control-and-observability.md](control-and-observability.md).
+
 ## OpenAI — Python SDK
 
 ```python

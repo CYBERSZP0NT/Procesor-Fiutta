@@ -635,6 +635,26 @@ func (c *Config) Validate() error {
 		problems = append(problems, base.Merge(c.Agentic).Validate(known)...)
 	}
 
+	// Control plane and declared limits.
+	if c.Control.Profile != "" {
+		if _, ok := control.NormalizeProfile(c.Control.Profile); !ok {
+			problems = append(problems, fmt.Sprintf("control.profile: unknown %q (auto | control | balanced)", c.Control.Profile))
+		}
+	}
+	if c.Control.MaxAttempts < 0 || c.Control.MaxWaitSec < 0 || c.Control.Hooks.TimeoutSec < 0 {
+		problems = append(problems, "control: max_attempts, max_wait_s and hooks.timeout_s must be >= 0")
+	}
+	for name, l := range c.Limits {
+		if l.RPM < 0 || l.RPD < 0 || l.TPM < 0 || l.TPD < 0 {
+			problems = append(problems, fmt.Sprintf("limits.%s: values must be >= 0", name))
+		}
+	}
+	switch strings.ToLower(c.Ledger.Content) {
+	case "", "off", "none", "preview", "full":
+	default:
+		problems = append(problems, fmt.Sprintf("ledger.content: unknown %q (off | preview | full)", c.Ledger.Content))
+	}
+
 	if len(problems) > 0 {
 		return &errValidation{Problems: problems}
 	}

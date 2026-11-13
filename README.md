@@ -4,6 +4,8 @@
 ![Go](https://img.shields.io/github/go-mod/go-version/CYBERSZP0NT/Procesor-Fiutta)
 ![OpenAI-compatible](https://img.shields.io/badge/API-OpenAI--compatible-412991)
 ![Task router](https://img.shields.io/badge/routing-agentic%20task%20router-2ea44f)
+![TUI](https://img.shields.io/badge/TUI-interactive-A78BFA)
+![Control](https://img.shields.io/badge/control-%E2%88%9E%20auto%20%E2%87%84%20%E2%9B%AD%20control-orange)
 
 **One static Go binary** in front of *all* your free and low-cost LLM
 capacity: vendor free tiers (Google, Groq, Cerebras, Together, DeepSeek, …),
@@ -105,6 +107,38 @@ header or `metadata.task`. Tiers, rules and the catalog are data
 ([`defaults/agentic.yaml`](defaults/agentic.yaml) plus an `agentic:` section
 in your config). Full guide: [docs/agentic.md](docs/agentic.md).
 
+## Observability, control & integrations
+
+Everything is logged to one **ledger**: every request, every upstream call
+with the provider's own `x-ratelimit-*` snapshot, every task decision,
+session and operator change. You can read it from the CLI, from the
+interactive TUI, or over HTTP. Full guide:
+[docs/control-and-observability.md](docs/control-and-observability.md).
+
+```bash
+freellm-router tui                       # interactive: dashboard · usage · history · sessions · chat · control
+freellm-router usage --models            # usage & limits across all providers/models (live or from the ledger)
+freellm-router history -f                # full log: requests, attempts, tasks, sessions — live
+freellm-router history sessions          # per-session totals; history show <id> for one request
+
+freellm-router ctl profile auto          # ∞ infinite & full auto: fallback, wait out cooldowns, retry until answered
+freellm-router ctl profile control       # ⛭ 120% control: no fallback, no silent retries, budgets, veto hooks
+freellm-router ctl disable groq · pause · forever on · max-wait 10m · hook pre ./guard.sh · cooldowns clear
+
+git diff | freellm-router exec -m code "review this"   # scripts: stdin in, answer out, exit 0/1/2/3
+eval "$(freellm-router env --session nightly)"          # any OpenAI-compatible tool → the router
+freellm-router wrap --profile auto -- python agent.py   # any harness, tracked as one session
+```
+
+Declare the quotas you know (they are never guessed), and the router
+tracks them, and in `auto`/`control` also enforces them as a budget:
+
+```yaml
+limits:
+  groq:       {rpm: 30, rpd: 14400}
+  openrouter: {rpm: 20, rpd: 50}
+```
+
 ## Zero-key stack (Docker)
 
 ```bash
@@ -118,8 +152,9 @@ curl -s http://localhost:8787/v1/chat/completions \
 
 | Shape | What |
 |---|---|
-| **CLI** | `chat`, `route`, `models`, `probe`, `providers (list/add/remove/test)`, `notes`, `stats`, `config (path/show/validate/init)`, `serve` |
-| **Server** | `POST /v1/chat/completions`, `GET /v1/models`, `GET /v1/health`, `GET /v1/notes`, `GET /v1/metrics` (Prometheus text format), `GET|POST /v1/route` (task router) — plus middleware: logging → CORS → auth (bearer, constant-time) → rate-limit → usage journal → panic-recover |
+| **CLI** | `chat`, `exec`/`ask`, `route`, `models`, `probe`, `providers (list/add/remove/test)`, `notes`, `usage`/`limits`, `history`/`log` (`sessions`, `show`, `export`), `stats`, `ctl`, `env`, `wrap`, `tui`, `mode`, `config (path/show/validate/init)`, `serve` |
+| **TUI** | `freellm-router tui` — dashboard, usage & limits, history, sessions, chat, control plane (live or local) |
+| **Server** | `POST /v1/chat/completions`, `GET /v1/models`, `GET /v1/health`, `GET /v1/notes`, `GET /v1/metrics` (Prometheus text format), `GET|POST /v1/route` (task router), `GET /v1/usage`, `GET /v1/history` (`?follow=1` SSE), `GET /v1/sessions`, `GET|PUT|PATCH /v1/control`, `DELETE /v1/cooldowns`, `GET /v1/ping`, session base URL `/s/<id>/v1` — plus middleware: logging → CORS → auth (bearer, constant-time) → rate-limit → usage journal → panic-recover |
 | **Go library** | `pkg/router` — embed the whole fallback engine in your Go service in < 30 lines; reference: [`example/embed.go`](example/embed.go) |
 | **Any-language plugins** | `impl: plugin` — any subprocess speaking stdio JSON-RPC (spec: [docs/plugin-protocol.md](docs/plugin-protocol.md)); references in `plugins/python-example` and `plugins/go-example` |
 | **Docker** | distroless image + compose examples (`docker/`) |
@@ -150,6 +185,7 @@ notes`, `models --tier`, and `GET /v1/notes`.
 | | |
 |---|---|
 | [docs/agentic.md](docs/agentic.md) | the agentic task router: classification, tiers, rules, overrides, config |
+| [docs/control-and-observability.md](docs/control-and-observability.md) | ledger, usage & limits, history, sessions, control profiles (∞ auto / ⛭ control), hooks, `exec`/`env`/`wrap`, TUI |
 | [docs/integrations.md](docs/integrations.md) | copy-paste blocks: OpenAI py/JS SDK, curl, Claude Code, Open WebUI, LibreChat, LiteLLM, MCP, Go embed |
 | [docs/adding-a-source.md](docs/adding-a-source.md) | the two supported onboarding paths (config line / plugin) |
 | [docs/plugin-protocol.md](docs/plugin-protocol.md) | stdio JSON-RPC spec + minimal reference impl |

@@ -197,6 +197,54 @@ Catalog entries and rules replace defaults by `id` (new ids are appended),
 prefer unknown entries, and catalog entries for providers that are not
 configured.
 
+## `limits` — `map[string]limits`
+
+Quotas you declare, keyed by provider name. A provider entry may carry its
+own `limits:` too; the top-level map wins. Windows are rolling. Nothing is
+shipped by default: free tiers change too often to guess.
+
+| Key | Type | Meaning |
+|---|---|---|
+| `rpm` | int | requests per minute |
+| `rpd` | int | requests per 24 hours |
+| `tpm` | int | tokens per minute |
+| `tpd` | int | tokens per 24 hours |
+| `note` | string | free text shown by `usage` |
+
+The limits are shown by `usage`, `GET /v1/usage` and the TUI. They are
+enforced as a budget when `control.enforce_limits` is in effect.
+
+## `ledger` — event log
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `file` | string | `$XDG_DATA_HOME/freellm/usage.jsonl` | ledger path (`server.usage_file` is honoured when this is empty) |
+| `disabled` | bool | `false` | no event logging anywhere |
+| `content` | string | `preview` | prompt/answer capture: `off`, `preview` (200 chars), `full` |
+| `max_bytes` | int | 10 MiB | server rotation size |
+| `keep` | int | `3` | rotated files kept |
+
+## `control` — control plane
+
+Each set key overrides the profile preset. See
+[control-and-observability.md](control-and-observability.md).
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `profile` | string | `balanced` | `auto` (∞ infinite & full auto), `control` (⛭ strict), `balanced` |
+| `paused` | bool | `false` | refuse every call |
+| `disabled` | []string | — | providers taken out of routing |
+| `allow` | []string | — | when non-empty: only these providers |
+| `fallback` | bool | per profile | walk the fallback chain |
+| `forever` | bool | per profile | wait out cooldowns and retry until answered |
+| `enforce_limits` | bool | per profile | treat `limits:` as a budget |
+| `max_attempts` | int | `0` | upstream calls per request (`0` = `policies.max_chain_attempts`) |
+| `max_wait_s` | int | `0` | forever mode: total waiting cap (`0` = until the request is cancelled) |
+| `escalate` | string | `auto` in the auto profile | route tried once the chain is exhausted (`""` = none) |
+| `hooks.pre_call` | []string | — | command that may veto or rewrite each call (fails closed) |
+| `hooks.post_call` | []string | — | command run after each call (background) |
+| `hooks.timeout_s` | int | `10` | per-hook timeout |
+
 ## Free-tier notes
 
 Machine-readable, nothing hardcoded: every provider entry's `notes:` field is
