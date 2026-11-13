@@ -23,6 +23,8 @@ func (s *Server) handleRouteCatalog(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"object":              "freellm.task_router",
 		"enabled":             spec.IsEnabled(),
+		"mode":                s.router.TaskMode(),
+		"modes":               router.TaskModes(),
 		"aliases":             s.router.TaskAliases(),
 		"roles":               spec.Roles,
 		"complexity":          spec.Complexity,
@@ -55,12 +57,51 @@ func (s *Server) handlePlan(w http.ResponseWriter, r *http.Request) {
 	for _, m := range q.Messages {
 		msgs = append(msgs, router.Message{Role: m.Role, Content: m.contentString()})
 	}
-	d, err := s.router.PlanTask(r.Context(), q.Model, msgs, len(q.Tools) > 0,
-		&router.TaskHints{Override: r.Header.Get("X-Freellm-Task"), Metadata: q.Metadata})
+	d, err := s.router.PlanTask(r.Context(), q.Model, msgs, len(q.Tools) > 0, taskHints(r, q.Metadata))
 	if err != nil {
 		writeOAError(w, http.StatusNotFound, err.Error(), "invalid_request_error", "")
 		return
 	}
 	setTaskHeaders(w.Header(), d)
 	writeJSON(w, http.StatusOK, d)
+}
+
+// taskHints collects the per-request task-router overrides.
+func taskHints(r *http.Request, md map[string]string) *router.TaskHints {
+	return &router.TaskHints{
+		Override: r.Header.Get("X-Freellm-Task"),
+		Mode:     r.Header.Get("X-Freellm-Task-Mode"),
+		Metadata: md,
+	}
+}
+
+// handleMode serves GET /v1/route/mode (current mode + the list) and
+// PUT|POST /v1/route/mode {"mode": "jako-tako"} — switches the default mode
+// for every following request until restart (persist it with
+// `freellm-router mode <mode>` or agentic.mode in the config).
+func (s *Server) handleMode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			writeOAError(w, http.StatusRequestEntityTooLarge, "request body too large", "invalid_request_error", "body")
+			return
+		}
+		var q struct {
+			Mode string `json:"mode"`
+		}
+		if err := jsonUnmarshal(body, &q); err != nil {
+			writeOAError(w, http.StatusBadRequest, "invalid JSON: "+err.Error(), "invalid_request_error", "body")
+			return
+		}
+		if _, err := s.router.SetTaskMode(q.Mode); err != nil {
+			writeOAError(w, http.StatusBadRequest, err.Error(), "invalid_request_error", "mode")
+			return
+		}
+		s.logger.Info("task-router mode switched", "mode", s.router.TaskMode())
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"object": "freellm.task_mode",
+		"mode":   s.router.TaskMode(),
+		"modes":  router.TaskModes(),
+	})
 }

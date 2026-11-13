@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/silverx/freellm-router/internal/core"
+	"github.com/silverx/freellm-router/pkg/router"
 )
 
 // ---------------------------------------------------------------------------
@@ -41,11 +42,19 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 		seen[name] = true
 	}
 
-	// 1b) Task-router aliases ("agent", "task"): pick a model per request.
+	// 1b) Task-router aliases ("agent", "task"): pick a model per request,
+	// plus one pinned variant per mode ("agent:jako-tako", …) so UI clients
+	// can choose the mode from their model picker.
 	for _, name := range s.router.TaskAliases() {
-		if !seen[name] {
-			data = append(data, oaModel{ID: name, Object: "model", Created: now, OwnedBy: "freellm-router/agentic"})
-			seen[name] = true
+		ids := []string{name}
+		for _, m := range router.TaskModes() {
+			ids = append(ids, name+":"+m.ID)
+		}
+		for _, id := range ids {
+			if !seen[id] {
+				data = append(data, oaModel{ID: id, Object: "model", Created: now, OwnedBy: "freellm-router/agentic"})
+				seen[id] = true
+			}
 		}
 	}
 
@@ -287,6 +296,8 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 			"GET  /v1/metrics",
 			"GET  /v1/route   (task-router catalog)",
 			"POST /v1/route   (task-router preview)",
+			"GET  /v1/route/mode (task-router mode)",
+			"PUT  /v1/route/mode (switch mode: rozklad-jazdy | jako-tako)",
 		},
 	})
 }

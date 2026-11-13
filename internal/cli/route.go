@@ -23,15 +23,17 @@ var (
 	routeLocal      bool
 	routeCatalog    bool
 	routeAll        bool
+	routeMode       string
 )
 
 var routeCmd = &cobra.Command{
 	Use:   "route [prompt...]",
 	Short: "Show what the agentic task router would pick for a prompt (no upstream call)",
 	Long: `The task router turns model "agent" (or "task") into a per-request pick:
-it classifies the prompt (role + complexity 1-5), works out the tier that is
-just enough, and builds a chain — cheapest sufficient model first, stronger
-ones next, weaker ones last as a best effort. Tiers, costs and rules are data
+it classifies the prompt (role + complexity 1-5) and builds a chain. In the
+default mode, [Rozkład Jazdy], that is all in: the strongest available model
+first, whatever the task. In Jako Tako it is the tier that is just enough:
+cheapest sufficient model first, stronger ones next, weaker ones last. Tiers, costs and rules are data
 (defaults/agentic.yaml + the agentic: section of your config).
 
 This command previews the decision without calling any provider. The prompt
@@ -45,6 +47,7 @@ Examples:
   freellm-router route "refactor this Go service for concurrency" --all
   echo "summarize: ..." | freellm-router route
   freellm-router route --role code --complexity 5 --local "x"
+  freellm-router route --mode jako-tako "write a haiku"
   freellm-router route --catalog
   freellm-router chat --model agent "explain CRDTs"`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +89,7 @@ Examples:
 			over = append(over, "local")
 		}
 		d, err := r.PlanTask(ctx, "", []router.Message{{Role: "user", Content: prompt}}, routeTools,
-			&router.TaskHints{Override: strings.Join(over, ",")})
+			&router.TaskHints{Override: strings.Join(over, ","), Mode: routeMode})
 		if err != nil {
 			return err
 		}
@@ -95,6 +98,7 @@ Examples:
 			return nil
 		}
 
+		fmt.Printf("mode     %s\n", d.ModeName)
 		fmt.Printf("need     %s, complexity %d (%s", d.Need.Role, d.Need.Complexity, d.Need.Source)
 		if len(d.Need.Signals) > 0 {
 			fmt.Printf(": %s", strings.Join(d.Need.Signals, " "))
@@ -139,6 +143,7 @@ func printTaskCatalog(ctx context.Context, r *router.Router) error {
 			"rules": spec.Rules, "catalog": spec.Catalog, "available": avail})
 		return nil
 	}
+	fmt.Printf("mode     %s (%s)\n", router.TaskModes()[modeIndex(r.TaskMode())].Name, r.TaskMode())
 	fmt.Printf("aliases  %s   (enabled: %v, escalations: %d)\n", strings.Join(r.TaskAliases(), ", "), spec.IsEnabled(), spec.MaxEscalations())
 	fmt.Print("roles   ")
 	for _, role := range spec.RolesByTier() {
@@ -156,7 +161,17 @@ func printTaskCatalog(ctx context.Context, r *router.Router) error {
 	return nil
 }
 
+func modeIndex(id string) int {
+	for i, m := range router.TaskModes() {
+		if m.ID == id {
+			return i
+		}
+	}
+	return 0
+}
+
 func init() {
+	routeCmd.Flags().StringVar(&routeMode, "mode", "", "mode for this preview: rozklad-jazdy ([Rozkład Jazdy], default) | jako-tako (Jako Tako)")
 	routeCmd.Flags().StringVar(&routeRole, "role", "", "force the role (classify|extract|chat|summarize|translate|write|research|review|plan|code|reason)")
 	routeCmd.Flags().IntVar(&routeComplexity, "complexity", 0, "force the complexity (1-5)")
 	routeCmd.Flags().BoolVar(&routeTools, "tools", false, "the request carries tool definitions (only tool-capable models qualify)")

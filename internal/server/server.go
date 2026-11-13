@@ -129,6 +129,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /notes", s.handleNotes)
 	mux.HandleFunc("GET /v1/route", s.handleRouteCatalog)
 	mux.HandleFunc("POST /v1/route", s.handlePlan)
+	mux.HandleFunc("GET /v1/route/mode", s.handleMode)
+	mux.HandleFunc("PUT /v1/route/mode", s.handleMode)
+	mux.HandleFunc("POST /v1/route/mode", s.handleMode)
 	mux.HandleFunc("GET /v1/metrics", s.handleMetrics)
 	mux.HandleFunc("GET /metrics", s.handleMetrics)
 	mux.HandleFunc("GET /{$}", s.handleRoot)
@@ -364,7 +367,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		if opts == nil {
 			opts = &router.RouteOpts{}
 		}
-		opts.Task = &router.TaskHints{Override: r.Header.Get("X-Freellm-Task"), Metadata: q.Metadata}
+		opts.Task = taskHints(r, q.Metadata)
 	}
 
 	finish := flushFn(w)
@@ -374,8 +377,13 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	var toolBuf []router.ToolChunk
 	var via atomic.Value // set by Serving callback
 	sinks := router.Sinks{
+		// Non-stream requests only buffer: the JSON body is written once the
+		// route returns. Writing SSE chunks here would prepend them to it.
 		Text: func(delta string) {
 			buf.WriteString(delta)
+			if !q.Stream {
+				return
+			}
 			if !completed {
 				s.commitStream(w, &via, chunkID, q.Model)
 				completed = true
@@ -394,6 +402,9 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		},
 		Tool: func(tc router.ToolChunk) {
 			toolBuf = append(toolBuf, tc)
+			if !q.Stream {
+				return
+			}
 			if !completed {
 				s.commitStream(w, &via, chunkID, q.Model)
 				completed = true

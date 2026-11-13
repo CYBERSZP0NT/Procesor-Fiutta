@@ -184,12 +184,13 @@ Catalog entries and rules replace defaults by `id` (new ids are appended),
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `enabled` | bool | `true` | turn the task router on or off |
+| `mode` | string | `rozklad-jazdy` | default mode: `rozklad-jazdy` ([Rozkład Jazdy], all in) or `jako-tako` (Jako Tako, just enough). Env `FREELLM_TASK_MODE` overrides it; `freellm-router mode <id>` writes it |
 | `aliases` | []string | `[agent, task]` | model names that trigger it (`agent:code:4` suffixes force role and complexity) |
 | `below_tier_fallback` | bool | `true` | append weaker models at the end of the chain as a last resort |
 | `escalations` | int | `1` | times an empty or filtered non-stream answer is retried one tier up |
 | `roles` | map[string]int | see defaults | role → base tier (1–5) |
 | `complexity` | map[int]int | `1:-1 2:0 3:0 4:+1 5:+2` | complexity → tier adjustment |
-| `catalog[]` | entry | 24 entries | `id`, `model` (`provider/model`), `tier`, `cost`, `speed`, `context`, `tools`, `good_at`, `enabled`, `note` |
+| `catalog[]` | entry | 25 entries | `id`, `model` (`provider/model`), `tier`, `cost`, `speed`, `context`, `tools`, `good_at`, `enabled`, `note` |
 | `rules[]` | rule | 4 rules | `id`, `when` (`role`, `complexity_min`, `complexity_max`, `tools`, `local`), `min_tier`, `max_tier`, `prefer`, `only_where` |
 
 `config validate` reports duplicate ids, tiers outside 1–5, rules that

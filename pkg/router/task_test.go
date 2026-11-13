@@ -42,13 +42,20 @@ func fakeUpstream(t *testing.T, empty ...string) (*httptest.Server, func() []str
 	return srv, func() []string { mu.Lock(); defer mu.Unlock(); return append([]string(nil), seen...) }
 }
 
+// taskRouter builds a 3-entry task router pinned to Jako Tako (the tests
+// below are about tiers); taskRouterMode keeps any mode ("" = default).
 func taskRouter(t *testing.T, url string, routes map[string][]string) *router.Router {
+	t.Helper()
+	return taskRouterMode(t, url, routes, "jako-tako")
+}
+
+func taskRouterMode(t *testing.T, url string, routes map[string][]string, mode string) *router.Router {
 	t.Helper()
 	r, err := router.New(router.Config{
 		Providers: []router.ProviderConfig{{Name: "fake", Impl: "openailike", BaseURL: url, Kind: "keyless"}},
 		Routes:    routes,
 		Timeout:   5 * time.Second,
-		Agentic: &router.TaskSpec{Catalog: []router.TaskEntry{
+		Agentic: &router.TaskSpec{Mode: mode, Catalog: []router.TaskEntry{
 			{ID: "tiny", Model: "fake/tiny", Tier: 1, Speed: 3},
 			{ID: "mid", Model: "fake/mid", Tier: 3, Speed: 2},
 			{ID: "big", Model: "fake/big", Tier: 5, Speed: 1, GoodAt: []string{"plan"}},
@@ -169,5 +176,65 @@ func TestTaskSpecDropsUnconfiguredProviders(t *testing.T) {
 	}
 	if a := r.TaskAvailability(context.Background()); a["tiny"] != "ok" {
 		t.Fatalf("availability %v", a)
+	}
+}
+
+func TestTaskRouterDefaultsToRozkladJazdy(t *testing.T) {
+	srv, seen := fakeUpstream(t)
+	r := taskRouterMode(t, srv.URL, nil, "")
+	if r.TaskMode() != "rozklad-jazdy" || router.TaskModes()[0].Name != "[Rozkład Jazdy]" {
+		t.Fatalf("default mode %q", r.TaskMode())
+	}
+	var last *router.TaskDecision
+	via, _, err := r.RouteRaw(context.Background(), "agent", []router.Message{{Role: "user", Content: "hi"}}, "agent", false, nil,
+		router.Sinks{Text: func(string) {}, Task: func(d *router.TaskDecision) { last = d }})
+	if err != nil || via != "fake/big" || seen()[0] != "big" {
+		t.Fatalf("[Rozkład Jazdy] must go straight to the strongest: via %s err %v", via, err)
+	}
+	if last.Mode != "rozklad-jazdy" || !strings.Contains(last.Header(), "mode=rozklad-jazdy") {
+		t.Fatalf("decision %+v", last)
+	}
+	// Empty answer from the strongest: retry goes to the next strongest.
+	srv2, seen2 := fakeUpstream(t, "big")
+	r2 := taskRouterMode(t, srv2.URL, nil, "")
+	via, _, err = r2.RouteRaw(context.Background(), "agent", []router.Message{{Role: "user", Content: "hi"}}, "agent", false, nil, router.Sinks{Text: func(string) {}})
+	if err != nil || via != "fake/mid" {
+		t.Fatalf("retry after empty answer: via %s err %v upstream %v", via, err, seen2())
+	}
+}
+
+func TestTaskModeSwitchAndPerRequest(t *testing.T) {
+	srv, _ := fakeUpstream(t)
+	r := taskRouterMode(t, srv.URL, nil, "")
+	hi := []router.Message{{Role: "user", Content: "hi"}}
+
+	if _, err := r.SetTaskMode("turbo"); err == nil {
+		t.Fatal("unknown mode accepted")
+	}
+	if id, err := r.SetTaskMode("Jako Tako"); err != nil || id != "jako-tako" || r.TaskMode() != "jako-tako" {
+		t.Fatalf("switch: %q %v", id, err)
+	}
+	if d, _ := r.PlanTask(context.Background(), "agent", hi, false, nil); d.Winner.ID != "tiny" {
+		t.Fatalf("Jako Tako after switch: %s", d.Reason)
+	}
+	// Per request back to [Rozkład Jazdy]: header, metadata, model suffix.
+	for _, c := range []struct {
+		sel string
+		h   *router.TaskHints
+	}{
+		{"agent", &router.TaskHints{Mode: "[Rozkład Jazdy]"}},
+		{"agent", &router.TaskHints{Metadata: map[string]string{"task_mode": "rozklad-jazdy"}}},
+		{"agent:rozklad-jazdy", nil},
+		{"agent", &router.TaskHints{Override: "rozklad jazdy"}},
+	} {
+		d, err := r.PlanTask(context.Background(), c.sel, hi, false, c.h)
+		if err != nil || d.Mode != "rozklad-jazdy" || d.Winner.ID != "big" {
+			t.Fatalf("%s %+v: %v %s", c.sel, c.h, err, d.Reason)
+		}
+	}
+	// Model suffix beats the header.
+	d, _ := r.PlanTask(context.Background(), "agent:jako-tako", hi, false, &router.TaskHints{Mode: "rozklad-jazdy"})
+	if d.Mode != "jako-tako" {
+		t.Fatalf("suffix must beat header: %s", d.Mode)
 	}
 }

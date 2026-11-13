@@ -21,11 +21,13 @@ type Candidate struct {
 
 // Decision is the outcome of Pick.
 type Decision struct {
+	Mode     string      `json:"mode"`      // mode id (rozklad-jazdy | jako-tako)
+	ModeName string      `json:"mode_name"` // display name ([Rozkład Jazdy] | Jako Tako)
 	Need     Need        `json:"need"`
 	Attempt  int         `json:"attempt"`  // escalation step (0 = first try)
 	Base     int         `json:"base"`     // role tier
 	Adjust   int         `json:"adjust"`   // complexity adjustment
-	Required int         `json:"required"` // final required tier after rules
+	Required int         `json:"required"` // final required tier after rules (5 in [Rozkład Jazdy])
 	Rules    []string    `json:"rules,omitempty"`
 	Winner   *Candidate  `json:"winner,omitempty"`
 	Chain    []string    `json:"chain"` // provider/model, try in order
@@ -43,8 +45,20 @@ type AvailFunc func(entry Entry) (ok bool, why string)
 // Pick turns a Need into a ranked chain. attempt raises the required tier
 // (escalation); exclude lists "provider/model" labels to leave out (e.g.
 // the one that just produced an empty answer); avail may be nil.
+//
+// The mode comes from need.Mode, else the spec. In [Rozkład Jazdy] every
+// eligible entry is in the chain, strongest first (tier, then context),
+// cost and speed ignored, rule tier caps ignored; hard filters (tools,
+// context, local, availability) still apply — those are physics, not
+// thrift. In Jako Tako the cheapest sufficient entry goes first.
 func (s Spec) Pick(need Need, attempt int, exclude map[string]bool, avail AvailFunc) Decision {
 	d := Decision{Need: need, Attempt: attempt}
+	d.Mode = s.EffectiveMode()
+	if m, ok := NormalizeMode(need.Mode); ok {
+		d.Mode = m
+	}
+	d.ModeName = ModeName(d.Mode)
+	full := d.Mode == ModeRozkladJazdy
 
 	d.Base = s.Roles[need.Role]
 	if d.Base == 0 {
@@ -88,6 +102,9 @@ func (s Spec) Pick(need Need, attempt int, exclude map[string]bool, avail AvailF
 		maxT = min(5, maxT+attempt)
 	}
 	d.Required = clamp(clamp(required, minT, maxT), 1, 5)
+	if full {
+		d.Required = 5 // all in: no "enough", no caps
+	}
 
 	preferIdx := map[string]int{}
 	for i, id := range prefer {
@@ -119,7 +136,7 @@ func (s Spec) Pick(need Need, attempt int, exclude map[string]bool, avail AvailF
 			}
 		}
 		if c.Lost == "" {
-			if e.Tier < d.Required {
+			if !full && e.Tier < d.Required {
 				c.Lost = fmt.Sprintf("tier %d < required %d", e.Tier, d.Required)
 				below = append(below, i)
 			} else {
@@ -141,6 +158,9 @@ func (s Spec) Pick(need Need, attempt int, exclude map[string]bool, avail AvailF
 		g := 1
 		if StrList(e.GoodAt).has(role) {
 			g = 0
+		}
+		if full {
+			return []int{-e.Tier, p, g, -e.Context, -e.Speed, i}
 		}
 		return []int{e.Tier, p, g, e.Cost, -e.Speed, i}
 	}
@@ -169,7 +189,11 @@ func (s Spec) Pick(need Need, attempt int, exclude map[string]bool, avail AvailF
 		w.Lost = ""
 		d.Winner = &w
 		for _, i := range ok[min(1, len(ok)):] {
-			cands[i].Lost = loseWhy(s.Catalog[i], s.Catalog[wi], role, preferIdx)
+			if full {
+				cands[i].Lost = loseWhyFull(s.Catalog[i], s.Catalog[wi], role, preferIdx)
+			} else {
+				cands[i].Lost = loseWhy(s.Catalog[i], s.Catalog[wi], role, preferIdx)
+			}
 		}
 		cands[wi].Lost = "" // also a best-effort winner from below the tier
 	}
@@ -217,12 +241,55 @@ func loseWhy(e, win Entry, role string, prefer map[string]int) string {
 	}
 }
 
+func loseWhyFull(e, win Entry, role string, prefer map[string]int) string {
+	switch {
+	case e.Tier < win.Tier:
+		return fmt.Sprintf("weaker (tier %d < %d)", e.Tier, win.Tier)
+	case hasPref(prefer, win.ID) && !hasPref(prefer, e.ID):
+		return "not preferred by a rule"
+	case hasPref(prefer, win.ID) && prefer[e.ID] > prefer[win.ID]:
+		return "lower in the rule's prefer list"
+	case StrList(win.GoodAt).has(role) && !StrList(e.GoodAt).has(role):
+		return "not good at " + role
+	case e.Context < win.Context:
+		return fmt.Sprintf("smaller context (%d < %d)", e.Context, win.Context)
+	case e.Speed < win.Speed:
+		return fmt.Sprintf("slower (%d < %d)", e.Speed, win.Speed)
+	default:
+		return "later in the catalog (fallback)"
+	}
+}
+
 func hasPref(m map[string]int, id string) bool { _, ok := m[id]; return ok }
 
 func (d Decision) explain(s Spec, sufficient bool) string {
 	n := d.Need
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s c%d (%s) -> tier %d", n.Role, n.Complexity, n.Source, d.Required)
+	fmt.Fprintf(&b, "%s %s c%d (%s) -> ", d.ModeName, n.Role, n.Complexity, n.Source)
+	if d.Mode == ModeRozkladJazdy {
+		b.WriteString("all in, strongest first [")
+		if d.Attempt > 0 {
+			fmt.Fprintf(&b, "retry %d, ", d.Attempt)
+		}
+		if len(d.Rules) > 0 {
+			fmt.Fprintf(&b, "rules %s, ", strings.Join(d.Rules, ","))
+		}
+		b.WriteString("cost and tier caps ignored]")
+		if n.Tools {
+			b.WriteString(", needs tools")
+		}
+		if n.Local {
+			b.WriteString(", local only")
+		}
+		if d.Winner == nil {
+			b.WriteString("; nothing in the catalog qualifies")
+		} else {
+			e := s.Catalog[d.idx(s)]
+			fmt.Fprintf(&b, "; picked %s (tier %d, context %d), %d in chain", e.ID, e.Tier, e.Context, len(d.Chain))
+		}
+		return b.String()
+	}
+	fmt.Fprintf(&b, "tier %d", d.Required)
 	fmt.Fprintf(&b, " [%s %d %+d", n.Role, d.Base, d.Adjust)
 	if d.Attempt > 0 {
 		fmt.Fprintf(&b, ", escalation +%d", d.Attempt)
@@ -300,8 +367,8 @@ func (d Decision) Header() string {
 	if d.Winner != nil {
 		pick = d.Winner.Model
 	}
-	return fmt.Sprintf("role=%s; complexity=%d; tier=%d; pick=%s; source=%s; attempt=%d",
-		d.Need.Role, d.Need.Complexity, d.Required, pick, d.Need.Source, d.Attempt)
+	return fmt.Sprintf("mode=%s; role=%s; complexity=%d; tier=%d; pick=%s; source=%s; attempt=%d",
+		d.Mode, d.Need.Role, d.Need.Complexity, d.Required, pick, d.Need.Source, d.Attempt)
 }
 
 // RolesByTier lists the configured roles, cheapest first (for display).

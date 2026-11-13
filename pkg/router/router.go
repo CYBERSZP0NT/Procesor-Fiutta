@@ -306,7 +306,15 @@ func (r *Router) RouteWithOptions(
 		out = &core.StreamOut{TextSink: sink}
 	}
 
-	result, err := r.dispatch(ctx, selector, req, out, nil, nil)
+	var hints *TaskHints
+	if opts != nil {
+		hints = opts.Task
+	}
+	var onTask func(*TaskDecision)
+	if hints != nil {
+		onTask = hints.OnDecision
+	}
+	result, err := r.dispatch(ctx, selector, req, out, hints, onTask)
 	if err != nil {
 		return "", nil, err
 	}

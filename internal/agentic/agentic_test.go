@@ -8,7 +8,16 @@ import (
 	"github.com/silverx/freellm-router/internal/config"
 )
 
+// defaultSpec is the embedded spec pinned to Jako Tako ("just enough"):
+// most tests below are about tiers. builtinSpec keeps the default mode.
 func defaultSpec(t *testing.T) agentic.Spec {
+	t.Helper()
+	s := builtinSpec(t)
+	s.Mode = agentic.ModeJakoTako
+	return s
+}
+
+func builtinSpec(t *testing.T) agentic.Spec {
 	t.Helper()
 	s, err := agentic.Default()
 	if err != nil {
@@ -129,7 +138,7 @@ func TestPickCheapestSufficientAndExplains(t *testing.T) {
 	for i, m := range d.Chain {
 		pos[m] = i
 	}
-	if pos["google/gemini-2.5-pro"] > pos["groq/llama-3.3-70b-versatile"] {
+	if pos["deepseek/deepseek-reasoner"] > pos["groq/llama-3.3-70b-versatile"] {
 		t.Fatalf("tier-5 entry must precede tier-3 fallback: %v", d.Chain)
 	}
 	for _, c := range d.Cands {
@@ -238,7 +247,7 @@ func TestMergeReplacesByID(t *testing.T) {
 		Escalations: &esc,
 		Roles:       map[string]int{"chat": 3},
 		Catalog: []agentic.Entry{
-			{ID: "gemini-pro", Model: "google/gemini-2.5-pro", Tier: 5, Enabled: &off},
+			{ID: "deepseek-reasoner", Model: "deepseek/deepseek-reasoner", Tier: 5, Enabled: &off},
 			{ID: "my-local", Model: "ollama/qwen3:32b", Tier: 4},
 		},
 	})
@@ -250,8 +259,110 @@ func TestMergeReplacesByID(t *testing.T) {
 	}
 	d := m.Pick(agentic.Need{Role: "plan", Complexity: 5}, 0, nil, allAvail)
 	for _, c := range d.Cands {
-		if c.ID == "gemini-pro" && c.Lost != "disabled" {
+		if c.ID == "deepseek-reasoner" && c.Lost != "disabled" {
 			t.Fatalf("disabled entry not reported as such: %q", c.Lost)
 		}
+	}
+}
+
+func TestDefaultModeIsRozkladJazdy(t *testing.T) {
+	s := builtinSpec(t)
+	if s.EffectiveMode() != agentic.ModeRozkladJazdy || agentic.DefaultMode != agentic.ModeRozkladJazdy {
+		t.Fatalf("default mode %q", s.EffectiveMode())
+	}
+	if (agentic.Spec{}).EffectiveMode() != agentic.ModeRozkladJazdy {
+		t.Fatal("an empty spec must also default to [Rozkład Jazdy]")
+	}
+	// "hi" — the cheapest task there is — still gets the strongest model.
+	n := agentic.Classify([]agentic.Msg{{Role: "user", Content: "hi"}}, false)
+	d := s.Pick(n, 0, nil, allAvail)
+	if d.Mode != agentic.ModeRozkladJazdy || d.ModeName != "[Rozkład Jazdy]" || d.Winner == nil || d.Winner.Tier != 5 {
+		t.Fatalf("want a tier-5 pick in [Rozkład Jazdy], got %+v (%s)", d.Winner, d.Reason)
+	}
+	if d.Winner.ID != "deepseek-reasoner" {
+		t.Fatalf("gemini-pro is off by default (free quota 0); want deepseek-reasoner, got %s", d.Winner.ID)
+	}
+	// Tie on tier: the biggest context wins (tier 4 below the winner).
+	for _, c := range d.Cands {
+		if c.Rank == 2 && c.ID != "gemini-flash-latest" {
+			t.Fatalf("second must be the 1M-context tier-4 entry, got %s", c.ID)
+		}
+	}
+	// Strongest first, all eligible entries, no "below tier".
+	prev := 6
+	byModel := map[string]agentic.Entry{}
+	for _, e := range s.Catalog {
+		byModel[e.Model] = e
+	}
+	for _, m := range d.Chain {
+		if tier := byModel[m].Tier; tier > prev {
+			t.Fatalf("chain not strongest-first: %v", d.Chain)
+		} else {
+			prev = tier
+		}
+	}
+	if !strings.HasPrefix(d.Reason, "[Rozkład Jazdy]") || !strings.Contains(d.Header(), "mode=rozklad-jazdy") {
+		t.Fatalf("reason/header do not name the mode: %s | %s", d.Reason, d.Header())
+	}
+}
+
+func TestRozkladJazdyIgnoresCapsKeepsHardFilters(t *testing.T) {
+	s := builtinSpec(t)
+	// sorting-stays-cheap caps classify at tier 2 in Jako Tako only.
+	d := s.Pick(agentic.Need{Role: "classify", Complexity: 1}, 0, nil, allAvail)
+	if d.Winner == nil || d.Winner.Tier != 5 {
+		t.Fatalf("tier cap applied in [Rozkład Jazdy]: %+v", d.Winner)
+	}
+	// Tools: still a hard filter.
+	d = s.Pick(agentic.Need{Role: "chat", Complexity: 1, Tools: true}, 0, nil, allAvail)
+	for _, c := range d.Cands {
+		if c.Rank > 0 {
+			for _, e := range s.Catalog {
+				if e.ID == c.ID && !e.Tools {
+					t.Fatalf("%s without tools in the chain", c.ID)
+				}
+			}
+		}
+	}
+	// Zero keys: the strongest keyless/scraper model wins, not a tiny one.
+	d = s.Pick(agentic.Need{Role: "chat", Complexity: 1}, 0, nil, availWhere("keyless", "scraper"))
+	if d.Winner == nil || d.Winner.Tier != 4 {
+		t.Fatalf("want the strongest available (tier 4), got %+v (%s)", d.Winner, d.Reason)
+	}
+	// Retry after a rejected answer drops the failing entry, stays all in.
+	d2 := s.Pick(agentic.Need{Role: "chat", Complexity: 1}, 1, map[string]bool{d.Winner.Model: true}, availWhere("keyless", "scraper"))
+	if d2.Winner == nil || d2.Winner.Model == d.Winner.Model || d2.Winner.Tier != 4 {
+		t.Fatalf("retry: %+v", d2.Winner)
+	}
+}
+
+func TestModeSpellingsAndPerRequestOverride(t *testing.T) {
+	for in, want := range map[string]string{
+		"[Rozkład Jazdy]": agentic.ModeRozkladJazdy, "rozklad jazdy": agentic.ModeRozkladJazdy,
+		"ROZKLAD_JAZDY": agentic.ModeRozkladJazdy, "max": agentic.ModeRozkladJazdy,
+		"Jako Tako": agentic.ModeJakoTako, "jako-tako": agentic.ModeJakoTako, "jt": agentic.ModeJakoTako,
+	} {
+		if got, ok := agentic.NormalizeMode(in); !ok || got != want {
+			t.Errorf("NormalizeMode(%q) = %q, %v", in, got, ok)
+		}
+	}
+	if _, ok := agentic.NormalizeMode("turbo"); ok {
+		t.Error("unknown mode accepted")
+	}
+	o := agentic.ParseOverride("jako tako:code:4")
+	if o.Mode != agentic.ModeJakoTako || o.Role != "code" || o.Complexity != 4 {
+		t.Fatalf("got %+v", o)
+	}
+	if o := agentic.ParseOverride("mode=[Rozkład Jazdy], role=chat"); o.Mode != agentic.ModeRozkladJazdy || o.Role != "chat" {
+		t.Fatalf("got %+v", o)
+	}
+	// Per-request Jako Tako over the [Rozkład Jazdy] default.
+	n := agentic.Need{Role: "chat", Complexity: 1}
+	n.Apply(agentic.ParseOverride("jako-tako"), "header")
+	if d := builtinSpec(t).Pick(n, 0, nil, allAvail); d.Mode != agentic.ModeJakoTako || d.Required != 1 {
+		t.Fatalf("per-request mode ignored: %s", d.Reason)
+	}
+	if probs := (agentic.Spec{Mode: "turbo"}).Validate(nil); len(probs) == 0 {
+		t.Fatal("unknown configured mode not reported")
 	}
 }

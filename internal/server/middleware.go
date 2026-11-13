@@ -129,8 +129,8 @@ func loggingmw(logger *slog.Logger) Middleware {
 func corsmw(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-ID, X-Freellm-Task")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-ID, X-Freellm-Task, X-Freellm-Task-Mode")
 		w.Header().Set("Access-Control-Expose-Headers", "X-Freellm-Routed-Via, X-Freellm-Task, X-Freellm-Task-Reason")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		if r.Method == http.MethodOptions {

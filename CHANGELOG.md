@@ -6,6 +6,20 @@ Changelog.
 ## [Unreleased]
 
 ### Added
+- **Task-router modes.** **[Rozkład Jazdy]** (`rozklad-jazdy`) is the new
+  default everywhere. It goes all in: the strongest available model first,
+  then the biggest context, with cost, speed and rule tier caps ignored, and
+  every eligible model in the chain. **Jako Tako** (`jako-tako`) is the
+  previous "just enough" behavior. You can switch with:
+  - `agentic.mode` in the config, or `freellm-router mode <id>`, which writes
+    only that key;
+  - `FREELLM_TASK_MODE`;
+  - `GET`/`PUT /v1/route/mode` on a running server;
+  - per request: `agent:<mode>`, `X-Freellm-Task-Mode`, `metadata.task_mode`,
+    or `chat` / `route --mode`.
+
+  `/v1/models` lists `agent:<mode>` variants. Decisions and headers carry the
+  mode.
 - **Agentic task router** (`internal/agentic`, `defaults/agentic.yaml`):
   `model: "agent"` / `"task"` classifies the last user message (role +
   complexity 1-5, EN+PL cues), computes the "just enough" tier, and routes
@@ -26,6 +40,18 @@ Changelog.
 - `internal/server` tests (httptest).
 
 ### Fixed
+- Gemini: `gemini-2.5-pro` now returns 404 for new users, and Pro's free-tier
+  quota is 0. The `smart` route and the catalog moved to the `-latest`
+  aliases (`gemini-flash-latest`, `gemini-flash-lite-latest`). The task
+  router's `gemini-pro` entry (`gemini-pro-latest`) is off by default, and
+  `gemini-flash-latest` is the tier-4 entry.
+- `chat --no-stream --via` printed an empty route (a shadowed variable).
+  `chat --via` with `agent` now reports the actual decision, and the
+  fallback that served it, instead of re-planning after the fact.
+- Non-streaming `/v1/chat/completions` wrote SSE chunks (and a
+  `text/event-stream` content type) before the JSON body, so non-stream
+  OpenAI clients got an unparseable response. Text and tool deltas are now
+  only buffered when `stream` is false.
 - `cmd/freellm-router/main.go` was never committed: the bare
   `freellm-router` pattern in `.gitignore` matched the directory, so
   `make build`, CI and the Docker image could not build. Pattern anchored.
