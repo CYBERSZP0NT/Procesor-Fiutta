@@ -37,7 +37,12 @@ type Server struct {
 
 	inFlight atomic.Int64 // requests currently inside the chat handler
 
-	rt *obs.Runtime // ledger + quota tracker + control plane
+	rt          *obs.Runtime // ledger + quota tracker + control plane
+	ledgerCache *ledger.CachedReader
+
+	availMu sync.Mutex
+	avail   map[string]string
+	availAt time.Time
 
 	once   bool
 	onceCh chan int32 // success(1) / failure(2) of the first chat call
@@ -77,6 +82,7 @@ func New(cfg *config.Config, timeout time.Duration) (*Server, error) {
 		maxBody:       cfg.Server.MaxBodyBytes,
 		lastErr:       make(map[string]string),
 		rt:            rt,
+		ledgerCache:   &ledger.CachedReader{Path: rt.Path, Keep: rt.Keep},
 		onceCh:        make(chan int32, 1),
 	}
 	// Wire upstream-error observation into the core router for metrics.

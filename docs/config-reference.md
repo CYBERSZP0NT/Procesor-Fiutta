@@ -241,7 +241,7 @@ Each set key overrides the profile preset. See
 | `max_attempts` | int | `0` | upstream calls per request (`0` = `policies.max_chain_attempts`) |
 | `max_wait_s` | int | `0` | forever mode: total waiting cap (`0` = until the request is cancelled) |
 | `escalate` | string | `auto` in the auto profile | route tried once the chain is exhausted (`""` = none) |
-| `hooks.pre_call` | []string | — | command that may veto or rewrite each call (fails closed) |
+| `hooks.pre_call` | []string | — | command that may veto or rewrite each call (fails closed). Config file only: the API refuses hook changes |
 | `hooks.post_call` | []string | — | command run after each call (background) |
 | `hooks.timeout_s` | int | `10` | per-hook timeout |
 

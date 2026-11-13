@@ -42,6 +42,7 @@ prints them together.
 ledger:
   file: /var/log/freellm/ledger.jsonl   # default: ~/.local/share/freellm/usage.jsonl
   content: preview    # off | preview (first 200 chars of prompt/answer, default) | full
+                      # previews are stored on disk — use "off" for sensitive work
   max_bytes: 10485760 # server rotation
   keep: 3
   # disabled: true    # no event logging at all
@@ -159,7 +160,7 @@ freellm-router ctl disable groq mistral | enable groq | enable all
 freellm-router ctl allow ollama | allow --clear
 freellm-router ctl fallback off | forever on | limits on   # or "default"
 freellm-router ctl max-attempts 3 | max-wait 10m | escalate free | escalate none
-freellm-router ctl hook pre ./guard.sh | hook pre --clear
+freellm-router ctl hook pre ./guard.sh | hook pre --clear   # config file only; restart to apply
 freellm-router ctl cooldowns | cooldowns clear [provider/model]
 ```
 
@@ -167,6 +168,19 @@ The same is available over HTTP. `GET /v1/control` returns the settings and
 the effective behaviour. `PUT` replaces the settings. `PATCH` merges a
 partial object, where `null` clears a field. `DELETE /v1/cooldowns[?via=…]`
 clears cooldowns.
+
+> **Security.**
+> - **Hooks are config-file only.** They run commands on the router's
+>   machine, so the API refuses to change them (HTTP 400). `ctl hook`
+>   writes them to the config, and they take effect when `serve` or `wrap`
+>   restarts.
+> - **Some endpoints are loopback-only without auth.** While
+>   `server.auth.mode` is `none`, the endpoints that change behaviour or
+>   return logged content answer `127.0.0.1`/`::1` only:
+>   `PUT/PATCH /v1/control`, `DELETE /v1/cooldowns`, `/v1/history` and
+>   `/v1/sessions`. The default bind is `0.0.0.0`. To use them from another
+>   host, enable bearer auth. Behind a reverse proxy every client looks like
+>   loopback, so put auth in front of the proxy.
 
 You can also override per request. Overrides do not touch the operator-wide
 state (pause, disabled, allow, hooks):
@@ -216,6 +230,10 @@ freellm-router exec --profile auto --deadline 1h "…"        # never give up wi
 freellm-router exec --profile control -m groq/llama-3.3-70b-versatile "…"
 ```
 
+`exec` reads piped stdin as context. If a harness keeps a stdin pipe open
+without writing to it, or you call `exec` inside a `while read` loop, pass
+`--no-stdin` or set `FREELLM_NO_STDIN=1`; otherwise `exec` waits on stdin.
+
 `exec` prints the answer on stdout and diagnostics on stderr (set
 `FREELLM_VERBOSE=1` to see the route taken). The exit codes are stable:
 `0` answered · `1` usage/config error · `2` every provider failed (or
@@ -249,7 +267,7 @@ server. On a shared server, use `ctl` or headers.
 |---|---|
 | `GET /v1/ping` | cheap liveness: pid, uptime, in-flight, ledger path, profile |
 | `GET /v1/usage` | the usage & limits report (JSON of `freellm-router usage`) |
-| `GET /v1/history?since=&until=&kind=&session=&provider=&id=&source=&errors=1&q=&limit=` | ledger events (`limit` defaults to 200) |
+| `GET /v1/history?since=&until=&kind=&session=&provider=&id=&source=&errors=1&q=&limit=` | ledger events (`limit` defaults to 200). Loopback-only without auth |
 | `GET /v1/history?follow=1&…` | backlog, then live events as Server-Sent Events |
 | `GET /v1/sessions[?limit=]` | per-session summaries |
 | `GET/PUT/PATCH /v1/control` | control plane |

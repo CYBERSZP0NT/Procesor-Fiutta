@@ -78,7 +78,9 @@ var execCmd = &cobra.Command{
 script, Makefile, CI job or agent harness.
 
 The prompt is the arguments; piped stdin is added as context (so
-"git diff | freellm-router exec 'review this'" works). The answer goes to
+"git diff | freellm-router exec 'review this'" works). A harness that keeps
+a stdin pipe open without writing to it should pass --no-stdin (or set
+FREELLM_NO_STDIN=1), as should calls inside a "while read" loop. The answer goes to
 stdout, diagnostics to stderr. --json prints one JSON object with text,
 via, tokens, latency, attempts, request id and session.
 
@@ -105,7 +107,18 @@ Examples:
 	RunE: runExec,
 }
 
-var execDeadline time.Duration
+var (
+	execDeadline time.Duration
+	execNoStdin  bool
+)
+
+func envTrue(name string) bool {
+	switch strings.ToLower(os.Getenv(name)) {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
+}
 
 func init() {
 	f := execCmd.Flags()
@@ -119,6 +132,7 @@ func init() {
 	f.Float64Var(&execOpts.temperature, "temperature", 0, "sampling temperature (0 = upstream default)")
 	f.BoolVarP(&execOpts.quiet, "quiet", "q", false, "no streaming: print the whole answer at the end")
 	f.StringSliceVarP(&execOpts.file, "file", "f", nil, "add a file's content as context (repeatable)")
+	f.BoolVar(&execNoStdin, "no-stdin", false, "never read stdin (for harnesses that keep a stdin pipe open; env FREELLM_NO_STDIN=1)")
 	f.DurationVar(&execDeadline, "deadline", 0, "give up after this long overall (default: --timeout, none in forever mode)")
 	rootCmd.AddCommand(execCmd)
 }
@@ -137,7 +151,8 @@ func runExec(cmd *cobra.Command, args []string) error {
 		}
 		parts = append(parts, fmt.Sprintf("--- %s ---\n%s", f, b))
 	}
-	if st, err := os.Stdin.Stat(); err == nil && st.Mode()&os.ModeCharDevice == 0 {
+	noStdin := execNoStdin || envTrue("FREELLM_NO_STDIN")
+	if st, err := os.Stdin.Stat(); !noStdin && err == nil && st.Mode()&os.ModeCharDevice == 0 {
 		b, _ := io.ReadAll(os.Stdin)
 		if s := strings.TrimSpace(string(b)); s != "" {
 			parts = append(parts, s)

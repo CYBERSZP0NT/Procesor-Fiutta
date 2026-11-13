@@ -147,7 +147,9 @@ func openRuntime(cfg *config.Config, source string) (*router.Router, *obs.Runtim
 	if err != nil {
 		return nil, nil, fmt.Errorf("router: %w", err)
 	}
-	rt := obs.Open(cfg, obs.Options{Source: source, Seed: true, DefaultPath: ledger.DefaultPath()})
+	// Seeding parses the ledger; a one-shot call only needs it to enforce
+	// declared quotas.
+	rt := obs.Open(cfg, obs.Options{Source: source, Seed: hasLimits(cfg), DefaultPath: ledger.DefaultPath()})
 	rt.Attach(r)
 	return r, rt, nil
 }
@@ -211,4 +213,17 @@ func ago(t time.Time) string {
 		return "just now"
 	}
 	return humanDur(time.Since(t).Round(time.Second)) + " ago"
+}
+
+// hasLimits reports whether any provider quota is declared.
+func hasLimits(cfg *config.Config) bool {
+	if len(cfg.Limits) > 0 {
+		return true
+	}
+	for _, p := range cfg.Providers {
+		if p.Limits != nil && !p.Limits.IsZero() {
+			return true
+		}
+	}
+	return false
 }

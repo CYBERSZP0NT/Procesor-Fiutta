@@ -221,6 +221,7 @@ type localBackend struct {
 	r       *router.Router
 	rt      *obs.Runtime
 	keys    func(string) int
+	cache   *ledger.CachedReader
 }
 
 // NewLocal returns a backend that reads the ledger and routes in-process.
@@ -234,7 +235,8 @@ func NewLocal(cfg *config.Config, cfgPath string, timeout time.Duration) (Backen
 	rt.Attach(r)
 	src := core.NewEnvKeySource(cfg.KeyEnvMap())
 	keys := func(p string) int { return len(src.Keys(context.Background(), strings.ToLower(p))) }
-	return &localBackend{cfg: cfg, cfgPath: cfgPath, r: r, rt: rt, keys: keys}, nil
+	return &localBackend{cfg: cfg, cfgPath: cfgPath, r: r, rt: rt, keys: keys,
+		cache: &ledger.CachedReader{Path: rt.Path, Keep: cfg.Ledger.Keep}}, nil
 }
 
 func (b *localBackend) Describe() string {
@@ -248,7 +250,7 @@ func (b *localBackend) Close() error { return b.rt.Close() }
 
 func (b *localBackend) events() []ledger.Event {
 	if b.rt.Path != "" {
-		if evs, err := ledger.ReadFile(b.rt.Path, b.cfg.Ledger.Keep); err == nil {
+		if evs, err := b.cache.Read(); err == nil {
 			return evs
 		}
 	}
@@ -263,8 +265,11 @@ func (b *localBackend) Usage() (*usage.Report, error) {
 }
 
 func (b *localBackend) History(limit int) ([]ledger.Event, error) {
-	f := ledger.Filter{Limit: limit}
-	return f.Apply(b.events()), nil
+	evs := b.events()
+	if limit > 0 && len(evs) > limit {
+		evs = evs[len(evs)-limit:]
+	}
+	return evs, nil
 }
 
 func (b *localBackend) Control() (*ControlState, error) {

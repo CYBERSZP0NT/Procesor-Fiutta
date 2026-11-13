@@ -122,6 +122,17 @@ func init() {
 		})
 	hookCmd.Flags().BoolVar(&hookClear, "clear", false, "remove the hook")
 	hookCmd.Flags().SetInterspersed(false)
+	// Hooks run commands, so a server never accepts them over its API: they
+	// are written to the config file and take effect on (re)start.
+	hookRun := hookCmd.RunE
+	hookCmd.RunE = func(c *cobra.Command, a []string) error {
+		ctlOpts.local, ctlOpts.save = true, true
+		if err := hookRun(c, a); err != nil {
+			return err
+		}
+		fmt.Println("\nnote: hooks are read from the config file only — restart serve/wrap to apply them.")
+		return nil
+	}
 
 	cooldownsCmd := &cobra.Command{
 		Use:   "cooldowns [clear [provider/model]]",

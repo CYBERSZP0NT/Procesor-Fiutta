@@ -11,7 +11,10 @@ Changelog.
   `x-ratelimit-*` snapshot, cooldown applied), every task decision,
   session and control change. It is written by the server (rotated) and by
   every CLI process. Old usage journals still read. Config: `ledger:`
-  (`file`, `content: off|preview|full`, rotation, `disabled`).
+  (`file`, `content: off|preview|full`, rotation, `disabled`). **Note:**
+  the default `content: preview` stores the first 200 characters of each
+  prompt and answer on disk, which the old journal never did. Set
+  `ledger.content: off` to keep them out.
 - **Usage & limits**: `freellm-router usage` (`limits`, `quota`;
   `--models --all --watch --json`) and `GET /v1/usage`. Shows rolling
   1m/1h/24h/today windows per provider and model, measured against limits
@@ -32,13 +35,17 @@ Changelog.
     attempts, escalation route.
   - **Pre-call hooks** can veto or rewrite a call. They fail closed: a hook
     that cannot run vetoes the call. **Post-call hooks** run for auditing.
+    Hooks come from the config file only; the API refuses to set them.
+  - Without auth, the mutating endpoints and the history/sessions
+    endpoints only answer loopback clients.
   - Per-request overrides: `X-Freellm-Profile`, `-Fallback`, `-Forever`,
     `-Max-Attempts`, `-Tags`.
 - **Integrations**:
   - `exec` (`ask`, `run`): a one-shot call for scripts. It reads context
     from stdin and `--file`, takes `--profile`, `--forever` and
     `--deadline`, prints `--json`, and has stable exit codes (0 ok, 1 error,
-    2 all failed, 3 vetoed).
+    2 all failed, 3 vetoed). `--no-stdin` / `FREELLM_NO_STDIN=1` for
+    harnesses that keep stdin open.
   - `env`: prints `OPENAI_BASE_URL` and the related variables for sh, fish,
     powershell, dotenv or json.
   - `wrap -- <cmd>`: runs any harness as one tracked session. It uses the

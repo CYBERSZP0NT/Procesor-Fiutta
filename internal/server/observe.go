@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -21,12 +22,50 @@ import (
 func (s *Server) registerObservability(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/ping", s.handlePing)
 	mux.HandleFunc("GET /v1/usage", s.handleUsage)
-	mux.HandleFunc("GET /v1/history", s.handleHistory)
-	mux.HandleFunc("GET /v1/sessions", s.handleSessions)
+	mux.HandleFunc("GET /v1/history", s.localOnly(s.handleHistory))
+	mux.HandleFunc("GET /v1/sessions", s.localOnly(s.handleSessions))
 	mux.HandleFunc("GET /v1/control", s.handleControl)
-	mux.HandleFunc("PUT /v1/control", s.handleControl)
-	mux.HandleFunc("PATCH /v1/control", s.handleControl)
-	mux.HandleFunc("DELETE /v1/cooldowns", s.handleCooldowns)
+	mux.HandleFunc("PUT /v1/control", s.localOnly(s.handleControl))
+	mux.HandleFunc("PATCH /v1/control", s.localOnly(s.handleControl))
+	mux.HandleFunc("DELETE /v1/cooldowns", s.localOnly(s.handleCooldowns))
+}
+
+// authOn reports whether bearer auth is actually enforced.
+func (s *Server) authOn() bool {
+	if !strings.EqualFold(s.cfg.Server.Auth.Mode, "bearer") {
+		return false
+	}
+	for _, k := range s.cfg.Server.Auth.Keys {
+		if k != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// localOnly guards endpoints that change router behaviour or return logged
+// content (prompt/answer previews): without auth they answer loopback
+// clients only — the default bind is 0.0.0.0, and anyone on the network
+// must not be able to steer the router or read its history.
+func (s *Server) localOnly(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !s.authOn() && !isLoopbackAddr(r.RemoteAddr) {
+			writeOAError(w, http.StatusForbidden,
+				"this endpoint is only served to localhost while server.auth.mode is none; enable bearer auth to use it remotely",
+				"permission_error", "")
+			return
+		}
+		h(w, r)
+	}
+}
+
+func isLoopbackAddr(remote string) bool {
+	host, _, err := net.SplitHostPort(remote)
+	if err != nil {
+		host = remote
+	}
+	ip := net.ParseIP(strings.Trim(host, "[]"))
+	return ip != nil && ip.IsLoopback()
 }
 
 // sessionPrefix lets any OpenAI-compatible client join a session without
@@ -155,7 +194,7 @@ func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 // there is one (full history), else the in-memory ring.
 func (s *Server) events(full bool) []ledger.Event {
 	if full && s.rt.Path != "" {
-		if evs, err := ledger.ReadFile(s.rt.Path, s.rt.Keep); err == nil {
+		if evs, err := s.ledgerCache.Read(); err == nil {
 			return evs
 		}
 	}
@@ -168,7 +207,7 @@ func (s *Server) liveState(ctx context.Context) *usage.Live {
 		Started:     s.serverStarted,
 		InFlight:    s.inFlight.Load(),
 		Cooldowns:   s.router.Cooldowns(),
-		Unavailable: s.router.Unavailable(ctx),
+		Unavailable: s.unavailable(ctx),
 		Disabled:    map[string]string{},
 	}
 	names := s.router.Providers()
@@ -189,7 +228,15 @@ func (s *Server) liveState(ctx context.Context) *usage.Live {
 func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	rep := s.rt.UsageReport(s.router, s.rt.Hub.Recent(), s.liveState(ctx))
+	// The file (cached) rather than the in-memory ring: the ring also holds
+	// http/attempt noise and would undercount 24h windows on a busy server.
+	evs := s.rt.Hub.Recent()
+	if s.rt.Path != "" {
+		if all, err := s.ledgerCache.Since(time.Now().Add(-25 * time.Hour)); err == nil {
+			evs = all
+		}
+	}
+	rep := s.rt.UsageReport(s.router, evs, s.liveState(ctx))
 	writeJSON(w, http.StatusOK, rep)
 }
 
@@ -341,6 +388,16 @@ func (s *Server) handleControl(w http.ResponseWriter, r *http.Request) {
 			writeOAError(w, http.StatusBadRequest, "invalid control settings: "+err.Error(), "invalid_request_error", "")
 			return
 		}
+		// Hooks run commands on this machine: they come from the config file
+		// only, never from the API (that would be remote code execution for
+		// anyone who can reach the port).
+		cur := s.rt.Ctrl.Settings().Hooks
+		if !sameHooks(next.Hooks, cur) && !(r.Method == http.MethodPut && emptyHooks(next.Hooks)) {
+			writeOAError(w, http.StatusBadRequest,
+				"control.hooks can only be set in the config file (then restart the server)", "invalid_request_error", "hooks")
+			return
+		}
+		next.Hooks = cur
 		if err := s.rt.Ctrl.Replace(next); err != nil {
 			writeOAError(w, http.StatusBadRequest, err.Error(), "invalid_request_error", "")
 			return
@@ -354,4 +411,25 @@ func (s *Server) handleCooldowns(w http.ResponseWriter, r *http.Request) {
 	_ = s.rt.Hub.Write(ledger.Event{Kind: ledger.KindControl, Source: "server", Action: "clear-cooldowns",
 		Via: r.URL.Query().Get("via"), Note: strconv.Itoa(n) + " cleared"})
 	writeJSON(w, http.StatusOK, map[string]any{"cleared": n})
+}
+
+func emptyHooks(h control.Hooks) bool {
+	return len(h.PreCall) == 0 && len(h.PostCall) == 0 && h.TimeoutSec == 0
+}
+
+func sameHooks(a, b control.Hooks) bool {
+	return strings.Join(a.PreCall, "\x00") == strings.Join(b.PreCall, "\x00") &&
+		strings.Join(a.PostCall, "\x00") == strings.Join(b.PostCall, "\x00") && a.TimeoutSec == b.TimeoutSec
+}
+
+// unavailable caches provider availability for a few seconds: /v1/usage
+// is polled, and some providers probe a daemon or a process to answer.
+func (s *Server) unavailable(ctx context.Context) map[string]string {
+	s.availMu.Lock()
+	defer s.availMu.Unlock()
+	if s.avail != nil && time.Since(s.availAt) < 15*time.Second {
+		return s.avail
+	}
+	s.avail, s.availAt = s.router.Unavailable(ctx), time.Now()
+	return s.avail
 }
