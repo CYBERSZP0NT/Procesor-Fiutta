@@ -118,6 +118,13 @@ routes:
     - github_models/gpt-4.1
   cohere:
     - cohere/command-r
+  glm:
+    - zai_global/glm-4.6
+    - zai/glm-4-flash
+  qwen:
+    - alibaba/qwen3-coder-plus
+    - modelscope/Qwen/Qwen3-Coder-480B-A35B-Instruct
+    - alibaba/qwen3-coder-flash
   zai:
     - zai/glm-4-flash
   together:

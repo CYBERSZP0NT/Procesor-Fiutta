@@ -140,6 +140,14 @@ providers:
     weight: 35
     notes: "Z.ai (GLM) free tier: daily request caps (RPM-limited)."
 
+  - name: zai_global
+    impl: openailike
+    base_url: "https://api.z.ai/api/paas/v4"
+    key_env: "ZAI_API_KEY"
+    kind: keyed
+    weight: 35
+    notes: "Z.ai international endpoint (GLM Coding Plan). GLM-4.x/5.x coding models."
+
   - name: openrouter
     impl: openailike
     base_url: "https://openrouter.ai/api/v1"
