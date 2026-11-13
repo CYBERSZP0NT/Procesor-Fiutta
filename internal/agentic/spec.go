@@ -25,8 +25,9 @@ type Spec struct {
 	// Enabled turns the task router on (default true).
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
 	// Mode is the default mode: "rozklad-jazdy" ([Rozkład Jazdy], all in —
-	// the default) or "jako-tako" (Jako Tako, just enough). Any spelling
-	// NormalizeMode accepts works.
+	// the default), "jako-tako" (Jako Tako, just enough) or "live" (by
+	// richness; the default when a working FreeLLMAPI key is found). Any
+	// spelling NormalizeMode accepts works.
 	Mode string `yaml:"mode,omitempty" json:"mode,omitempty"`
 	// Aliases are the model names that trigger task routing (default
 	// "agent", "task"). "agent:code:4" style suffixes force role/complexity.
@@ -62,6 +63,40 @@ type Entry struct {
 	// Where is the provider kind (local | keyless | keyed | scraper |
 	// sidecar | plugin). Filled from the provider config when empty.
 	Where string `yaml:"where,omitempty" json:"where,omitempty"`
+	// Rank is the catalog's intelligence rank within the provider (1 =
+	// best, 0 = unknown). Live mode uses it to order a provider's models.
+	Rank int `yaml:"rank,omitempty" json:"rank,omitempty"`
+	// Quota is the free capacity in tokens per day (0 = unknown). Live
+	// mode prefers the richer quota between equally strong models.
+	Quota int64 `yaml:"quota,omitempty" json:"quota,omitempty"`
+}
+
+// Richer reports whether a ranks before b by richness: size tier, then
+// context window, then daily free tokens, then intelligence rank, then
+// speed. The catalog's rank is per provider, so it only breaks ties that
+// are otherwise exact (in practice: models of one provider). A plain
+// lexicographic order keeps it transitive, so sorting is stable.
+func Richer(a, b Entry) bool {
+	if a.Tier != b.Tier {
+		return a.Tier > b.Tier
+	}
+	if a.Context != b.Context {
+		return a.Context > b.Context
+	}
+	if a.Quota != b.Quota {
+		return a.Quota > b.Quota
+	}
+	if ra, rb := rankKey(a.Rank), rankKey(b.Rank); ra != rb {
+		return ra < rb
+	}
+	return a.Speed > b.Speed
+}
+
+func rankKey(r int) int {
+	if r <= 0 {
+		return 1 << 30 // unknown ranks last
+	}
+	return r
 }
 
 // Provider returns the provider part of Model.
@@ -195,10 +230,10 @@ func mergeByID[T any](base, over []T, id func(T) string) []T {
 // IsEnabled reports whether task routing is on.
 func (s Spec) IsEnabled() bool { return s.Enabled == nil || *s.Enabled }
 
-// AliasNames returns the configured aliases (default "agent", "task").
+// AliasNames returns the configured aliases (default "agent", "task", "live").
 func (s Spec) AliasNames() []string {
 	if len(s.Aliases) == 0 {
-		return []string{"agent", "task"}
+		return []string{"agent", "task", "live"}
 	}
 	return s.Aliases
 }
@@ -222,7 +257,7 @@ func (s Spec) MaxEscalations() int {
 func (s Spec) Validate(knownProviders map[string]bool) []string {
 	var probs []string
 	if _, ok := NormalizeMode(s.Mode); s.Mode != "" && !ok {
-		probs = append(probs, "agentic.mode: unknown mode "+s.Mode+" (rozklad-jazdy | jako-tako)")
+		probs = append(probs, "agentic.mode: unknown mode "+s.Mode+" ("+ModeIDs()+")")
 	}
 	ids := map[string]bool{}
 	for i, e := range s.Catalog {

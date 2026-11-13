@@ -5,6 +5,32 @@ loosely follows Keep a Changelog.
 
 ## [Unreleased]
 
+### Added
+- **FreeLLMAPI live: mode `live`, routing by richness.** Put a FreeLLMAPI
+  Premium key in `FREELLM_API_KEY` (`fla_…`). The router checks it
+  (`GET api.freellmapi.co/v1/license/check`), pulls the signed live catalog
+  (`/v1/latest`, Ed25519-verified against FreeLLMAPI's pinned key), adds up
+  to 300 of its models to the task router, and makes `live` the default mode
+  unless one is set. `live` is all in, ranked by size class, then context,
+  then free daily quota. A sidecar key (`freellmapi-…`) is checked against
+  `$FREELLMAPI_URL/v1/models` and adds `freellmapi/auto:smart` and
+  `freellmapi/auto`. The verdict is cached (license 6 h, catalog 12 h, 7 days
+  of grace during an outage). With no key there is no network call.
+  New: `szmelc-router live [status|check|sync]`, `GET /v1/live`, model
+  `live` (= `agent:live`), the `live:` config section, and the env vars
+  `FREELLM_LIVE` and `FREELLM_LIVE_CACHE`. `chat` and `exec` default to
+  `live` while it is the live default. Guide:
+  [docs/freellmapi-live.md](docs/freellmapi-live.md).
+
+### Fixed
+- **freellmapi sidecar provider**: the default URL is now
+  `http://localhost:3001/v1`, FreeLLMAPI's real port, with the `/v1` that
+  `openailike` needs. It sends its key (`key_env: FREELLMAPI_API_KEY|FREELLMAPI_KEY`).
+  Before, it pointed at `:5174` without `/v1` and never sent a key.
+- A FreeLLMAPI key in `FREELLM_API_KEY` is no longer used as the router's
+  own bearer by `env` and the CLI client, so the license never lands in
+  `OPENAI_API_KEY`.
+
 ### Changed
 - **Repository renamed** from `CYBERSZP0NT/Procesor-Fiutta` to
   `CYBERSZP0NT/szmelc-router` (GitHub redirects the old URLs). The Go module

@@ -15,6 +15,10 @@ canonical way to check is `szmelc-router config show` (full resolved YAML).
    `FREELLM_LOG_LEVEL`, `FREELLM_LOG_FORMAT`, plus a loaded `.env` file.
 4. **`${VAR}` / `${VAR:-default}` expansion** — applied to every string field
    after merging.
+5. **FreeLLMAPI live** — when a FreeLLMAPI key is found (`FREELLM_API_KEY`)
+   and works, the live catalog is added to the task router and, unless a mode
+   is set, `agentic.mode` becomes `live`. It is cached, never fails loading,
+   and is a no-op without a key. See [`live`](#live--freellmapi-live).
 
 Validation runs after expansion: `szmelc-router config validate` is the fast
 check (unknown `impl`, bad `kind`, missing `base_url` for HTTP impls,
@@ -31,6 +35,8 @@ catalog:
 logging:
 http:
 routes_acl:   # optional per-route bearer-key ACLs
+agentic:      # task router overlay
+live:         # FreeLLMAPI live (key, catalog, default mode)
 ```
 
 ## `routes` — `map[string][]string`
@@ -184,18 +190,35 @@ Catalog entries and rules replace defaults by `id` (new ids are appended),
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `enabled` | bool | `true` | turn the task router on or off |
-| `mode` | string | `rozklad-jazdy` | default mode: `rozklad-jazdy` ([Rozkład Jazdy], all in) or `jako-tako` (Jako Tako, just enough). Env `FREELLM_TASK_MODE` overrides it; `szmelc-router mode <id>` writes it |
-| `aliases` | []string | `[agent, task]` | model names that trigger it (`agent:code:4` suffixes force role and complexity) |
+| `mode` | string | `rozklad-jazdy` (`live` with a working FreeLLMAPI key) | default mode: `rozklad-jazdy` ([Rozkład Jazdy], all in), `jako-tako` (Jako Tako, just enough) or `live` (by richness). Env `FREELLM_TASK_MODE` overrides it; `szmelc-router mode <id>` writes it. Either one also keeps the live default away |
+| `aliases` | []string | `[agent, task, live]` | model names that trigger it (`agent:code:4` suffixes force role and complexity; `live` pins mode live) |
 | `below_tier_fallback` | bool | `true` | append weaker models at the end of the chain as a last resort |
 | `escalations` | int | `1` | times an empty or filtered non-stream answer is retried one tier up |
 | `roles` | map[string]int | see defaults | role → base tier (1–5) |
 | `complexity` | map[int]int | `1:-1 2:0 3:0 4:+1 5:+2` | complexity → tier adjustment |
-| `catalog[]` | entry | 25 entries | `id`, `model` (`provider/model`), `tier`, `cost`, `speed`, `context`, `tools`, `good_at`, `enabled`, `note` |
+| `catalog[]` | entry | 25 entries (+ live entries) | `id`, `model` (`provider/model`), `tier`, `cost`, `speed`, `context`, `tools`, `good_at`, `enabled`, `note`, `rank` (intelligence rank, 1 = best), `quota` (free tokens/day) |
 | `rules[]` | rule | 4 rules | `id`, `when` (`role`, `complexity_min`, `complexity_max`, `tools`, `local`), `min_tier`, `max_tier`, `prefer`, `only_where` |
 
 `config validate` reports duplicate ids, tiers outside 1–5, rules that
 prefer unknown entries, and catalog entries for providers that are not
 configured.
+
+## `live` — FreeLLMAPI live
+
+Full guide: [freellmapi-live.md](freellmapi-live.md).
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `enabled` | string | `auto` | `auto`: check any FreeLLMAPI key found, go live when one works · `offline`: cached verdict only · `off`: never look. Env `FREELLM_LIVE` overrides it |
+| `key` | string | discovered | a license (`fla_…`) or sidecar (`freellmapi-…`) key; `${VAR}` works. Empty: `FREELLM_API_KEY`, `FREELLMAPI_LICENSE_KEY`, `FREELLMAPI_API_KEY`, FreeLLMAPI's `FREEAPI_CONFIG_JSON` `license` |
+| `max_models` | int | `300` | live catalog entries given to the task router, richest first |
+| `keep_mode` | bool | `false` | use the live catalog but never switch the default mode |
+| `catalog_url` | string | `https://api.freellmapi.co` | catalog service (`$CATALOG_BASE_URL`) |
+| `pubkey` | string | pinned Ed25519 key | catalog signing key, for a self-hosted catalog (`$CATALOG_PUBKEY`) |
+
+Cache: `$FREELLM_LIVE_CACHE`, else `~/.cache/szmelc/live.json` +
+`live-catalog.json` (0600). The license is checked again after 6 h and the
+catalog after 12 h. `szmelc-router live check|sync` forces both.
 
 ## `limits` — `map[string]limits`
 

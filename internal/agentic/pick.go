@@ -21,8 +21,8 @@ type Candidate struct {
 
 // Decision is the outcome of Pick.
 type Decision struct {
-	Mode     string      `json:"mode"`      // mode id (rozklad-jazdy | jako-tako)
-	ModeName string      `json:"mode_name"` // display name ([Rozkład Jazdy] | Jako Tako)
+	Mode     string      `json:"mode"`      // mode id (rozklad-jazdy | jako-tako | live)
+	ModeName string      `json:"mode_name"` // display name ([Rozkład Jazdy] | Jako Tako | Live)
 	Need     Need        `json:"need"`
 	Attempt  int         `json:"attempt"`  // escalation step (0 = first try)
 	Base     int         `json:"base"`     // role tier
@@ -50,7 +50,9 @@ type AvailFunc func(entry Entry) (ok bool, why string)
 // eligible entry is in the chain, strongest first (tier, then context),
 // cost and speed ignored, rule tier caps ignored; hard filters (tools,
 // context, local, availability) still apply — those are physics, not
-// thrift. In Jako Tako the cheapest sufficient entry goes first.
+// thrift. Live is all in too, ranked by richness (Richer: size tier,
+// context, daily free tokens, intelligence rank). In Jako
+// Tako the cheapest sufficient entry goes first.
 func (s Spec) Pick(need Need, attempt int, exclude map[string]bool, avail AvailFunc) Decision {
 	d := Decision{Need: need, Attempt: attempt}
 	d.Mode = s.EffectiveMode()
@@ -58,7 +60,8 @@ func (s Spec) Pick(need Need, attempt int, exclude map[string]bool, avail AvailF
 		d.Mode = m
 	}
 	d.ModeName = ModeName(d.Mode)
-	full := d.Mode == ModeRozkladJazdy
+	full := allIn(d.Mode)
+	rich := d.Mode == ModeLive
 
 	d.Base = s.Roles[need.Role]
 	if d.Base == 0 {
@@ -164,7 +167,23 @@ func (s Spec) Pick(need Need, attempt int, exclude map[string]bool, avail AvailF
 		}
 		return []int{e.Tier, p, g, e.Cost, -e.Speed, i}
 	}
-	sort.SliceStable(ok, func(a, b int) bool { return lessInts(key(ok[a]), key(ok[b])) })
+	sort.SliceStable(ok, func(a, b int) bool {
+		if rich {
+			ea, eb := s.Catalog[ok[a]], s.Catalog[ok[b]]
+			// Rule preferences still come first among equals in tier.
+			if ea.Tier == eb.Tier {
+				pa, pb := key(ok[a])[1], key(ok[b])[1]
+				if pa != pb {
+					return pa < pb
+				}
+			}
+			if Richer(ea, eb) != Richer(eb, ea) {
+				return Richer(ea, eb)
+			}
+			return ok[a] < ok[b]
+		}
+		return lessInts(key(ok[a]), key(ok[b]))
+	})
 	// Below-tier best effort: strongest first, then cheapest.
 	sort.SliceStable(below, func(a, b int) bool {
 		ea, eb := s.Catalog[below[a]], s.Catalog[below[b]]
@@ -189,7 +208,9 @@ func (s Spec) Pick(need Need, attempt int, exclude map[string]bool, avail AvailF
 		w.Lost = ""
 		d.Winner = &w
 		for _, i := range ok[min(1, len(ok)):] {
-			if full {
+			if rich {
+				cands[i].Lost = loseWhyRich(s.Catalog[i], s.Catalog[wi], preferIdx)
+			} else if full {
 				cands[i].Lost = loseWhyFull(s.Catalog[i], s.Catalog[wi], role, preferIdx)
 			} else {
 				cands[i].Lost = loseWhy(s.Catalog[i], s.Catalog[wi], role, preferIdx)
@@ -260,14 +281,37 @@ func loseWhyFull(e, win Entry, role string, prefer map[string]int) string {
 	}
 }
 
+func loseWhyRich(e, win Entry, prefer map[string]int) string {
+	switch {
+	case e.Tier < win.Tier:
+		return fmt.Sprintf("poorer size class (tier %d < %d)", e.Tier, win.Tier)
+	case hasPref(prefer, win.ID) && !hasPref(prefer, e.ID):
+		return "not preferred by a rule"
+	case e.Context < win.Context:
+		return fmt.Sprintf("smaller context (%d < %d)", e.Context, win.Context)
+	case e.Quota < win.Quota:
+		return fmt.Sprintf("smaller free quota (%d < %d tokens/day)", e.Quota, win.Quota)
+	case rankKey(e.Rank) > rankKey(win.Rank):
+		return fmt.Sprintf("lower intelligence rank (%d > %d)", e.Rank, win.Rank)
+	case e.Speed < win.Speed:
+		return fmt.Sprintf("slower (%d < %d)", e.Speed, win.Speed)
+	default:
+		return "later in the catalog (fallback)"
+	}
+}
+
 func hasPref(m map[string]int, id string) bool { _, ok := m[id]; return ok }
 
 func (d Decision) explain(s Spec, sufficient bool) string {
 	n := d.Need
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s %s c%d (%s) -> ", d.ModeName, n.Role, n.Complexity, n.Source)
-	if d.Mode == ModeRozkladJazdy {
-		b.WriteString("all in, strongest first [")
+	if allIn(d.Mode) {
+		if d.Mode == ModeLive {
+			b.WriteString("by richness, richest first [")
+		} else {
+			b.WriteString("all in, strongest first [")
+		}
 		if d.Attempt > 0 {
 			fmt.Fprintf(&b, "retry %d, ", d.Attempt)
 		}

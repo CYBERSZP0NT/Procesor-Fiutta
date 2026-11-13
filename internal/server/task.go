@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/CYBERSZP0NT/szmelc-router/internal/live"
 	"github.com/CYBERSZP0NT/szmelc-router/pkg/router"
 )
 
@@ -103,5 +104,19 @@ func (s *Server) handleMode(w http.ResponseWriter, r *http.Request) {
 		"object": "freellm.task_mode",
 		"mode":   s.router.TaskMode(),
 		"modes":  router.TaskModes(),
+	})
+}
+
+// handleLive serves GET /v1/live: what the router found out about
+// FreeLLMAPI live at startup (keys masked, license, catalog, mode).
+func (s *Server) handleLive(w http.ResponseWriter, r *http.Request) {
+	st := s.cfg.LiveState
+	if st == nil {
+		st = &live.State{Reason: "not checked"}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"object": "freellm.live",
+		"live":   st,
+		"mode":   s.router.TaskMode(),
 	})
 }

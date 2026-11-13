@@ -11,9 +11,9 @@ import (
 )
 
 var modeCmd = &cobra.Command{
-	Use:   "mode [rozklad-jazdy|jako-tako]",
+	Use:   "mode [rozklad-jazdy|jako-tako|live]",
 	Short: "Show or set the agentic task router's default mode",
-	Long: `The task router (model "agent") has two modes:
+	Long: `The task router (model "agent") has three modes:
 
   rozklad-jazdy  [Rozkład Jazdy]  all in: always the strongest available model
                                   first, biggest context, cost and tier caps
@@ -21,10 +21,16 @@ var modeCmd = &cobra.Command{
   jako-tako      Jako Tako        just enough: the cheapest model that reaches
                                   the tier the task needs, stronger ones only
                                   as escalation.
+  live           Live             by richness: all in, ranked by the signed
+                                  FreeLLMAPI live catalog (size class, then
+                                  context, then free quota). The default when
+                                  a working FreeLLMAPI key is found and no
+                                  mode is set — see szmelc-router live.
 
 With no argument this prints the mode in effect. With one, it writes
 agentic.mode to your config file (only that key — the rest of the file is
-kept). Any spelling works: "[Rozkład Jazdy]", "rozklad jazdy", "Jako Tako".
+kept). Any spelling works: "[Rozkład Jazdy]", "rozklad jazdy", "Jako Tako",
+"po bogatości". Setting a mode here also opts out of the live default.
 
 A running server is not affected until restart; switch it live with
   curl -X PUT localhost:8787/v1/route/mode -d '{"mode":"jako-tako"}'
@@ -40,7 +46,7 @@ Examples:
 		if len(args) == 1 {
 			id, ok := agentic.NormalizeMode(args[0])
 			if !ok {
-				return fmt.Errorf("unknown mode %q (rozklad-jazdy | jako-tako)", args[0])
+				return fmt.Errorf("unknown mode %q (%s)", args[0], agentic.ModeIDs())
 			}
 			path := config.UserPath(pCfgPath)
 			if err := config.SetUserValue(path, []string{"agentic", "mode"}, id); err != nil {

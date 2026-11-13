@@ -202,7 +202,7 @@ func runExec(cmd *cobra.Command, args []string) error {
 
 	selector := pModel
 	if selector == "" {
-		selector = "auto"
+		selector = defaultSelector(cfg)
 	}
 	msgs := make([]router.Message, 0, 2)
 	if execOpts.system != "" {
@@ -318,7 +318,7 @@ func envVars(cfg *config.Config, base, session string) [][2]string {
 	if session != "" {
 		api = base + "/s/" + session + "/v1"
 	}
-	key := os.Getenv("FREELLM_API_KEY")
+	key := ownAPIKey()
 	if key == "" && cfg != nil && len(cfg.Server.Auth.Keys) > 0 {
 		key = cfg.Server.Auth.Keys[0]
 	}

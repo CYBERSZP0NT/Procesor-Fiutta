@@ -114,6 +114,24 @@ header or `metadata.task`. Tiers, rules and the catalog are data
 ([`defaults/agentic.yaml`](defaults/agentic.yaml) plus an `agentic:` section
 in your config). Full guide: [docs/agentic.md](docs/agentic.md).
 
+## FreeLLMAPI live — `model: "live"`, by richness
+
+Have a [FreeLLMAPI](https://github.com/tashfeenahmed/freellmapi) Premium key
+(`fla_…`, the "live" plan)? Export it, and the router checks it, pulls the
+signed live catalog (Ed25519-verified) and makes **`live`** the default mode:
+all in, richest first (size class, then context, then free daily quota).
+Without a key nothing changes and no request is made.
+
+```bash
+export FREELLM_API_KEY=fla_…
+szmelc-router live          # ✓ license active, live catalog v…, N entries, mode Live
+szmelc-router chat "hi"     # no --model → "live"
+```
+
+It works with a self-hosted FreeLLMAPI sidecar too (`freellmapi-…` key). An
+explicit `agentic.mode` or `FREELLM_TASK_MODE` always wins. Guide:
+[docs/freellmapi-live.md](docs/freellmapi-live.md).
+
 ## Observability, control & integrations
 
 Everything is logged to one **ledger**: every request, every upstream call

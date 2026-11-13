@@ -47,8 +47,10 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 	// can choose the mode from their model picker.
 	for _, name := range s.router.TaskAliases() {
 		ids := []string{name}
-		for _, m := range router.TaskModes() {
-			ids = append(ids, name+":"+m.ID)
+		if !strings.EqualFold(name, "live") { // "live" is itself a mode pin
+			for _, m := range router.TaskModes() {
+				ids = append(ids, name+":"+m.ID)
+			}
 		}
 		for _, id := range ids {
 			if !seen[id] {
@@ -297,7 +299,8 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 			"GET  /v1/route   (task-router catalog)",
 			"POST /v1/route   (task-router preview)",
 			"GET  /v1/route/mode (task-router mode)",
-			"PUT  /v1/route/mode (switch mode: rozklad-jazdy | jako-tako)",
+			"PUT  /v1/route/mode (switch mode: rozklad-jazdy | jako-tako | live)",
+			"GET  /v1/live (FreeLLMAPI live: key, license, catalog)",
 		},
 	})
 }
