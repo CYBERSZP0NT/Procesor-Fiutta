@@ -29,7 +29,7 @@ pkgver() {
 prepare() {
   cd "${pkgname}"
   export GOPATH="${srcdir}/gopath"
-  go mod download -x
+  go mod download -modcacherw -x
 }
 
 build() {
