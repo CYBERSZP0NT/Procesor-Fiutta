@@ -1,5 +1,5 @@
 # ============================================================================
-# freellm-router — default providers (embedded data, no code changes needed)
+# szmelc-router — default providers (embedded data, no code changes needed)
 #
 # Every provider is a pure data entry here.  Adding a new source =
 # adding one entry below (or one `providers:` line in user config).

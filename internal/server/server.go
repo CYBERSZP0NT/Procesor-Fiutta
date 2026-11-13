@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"github.com/silverx/freellm-router/internal/ledger"
-	"github.com/silverx/freellm-router/internal/obs"
+	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/obs"
 	"io"
 	"log/slog"
 	"net"
@@ -17,9 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/core"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 // Server is the OpenAI-compatible HTTP server. Build with New, serve with Run.

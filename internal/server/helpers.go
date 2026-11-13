@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 func jsonUnmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }

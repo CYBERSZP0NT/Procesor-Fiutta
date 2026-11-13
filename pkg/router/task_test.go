@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 // fakeUpstream answers with the requested model name, except models listed

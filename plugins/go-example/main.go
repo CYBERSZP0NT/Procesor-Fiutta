@@ -1,6 +1,6 @@
 // Plugin: go-example
 //
-// A reference Go plugin implementing the freellm-router JSON-RPC stdio protocol.
+// A reference Go plugin implementing the szmelc-router JSON-RPC stdio protocol.
 // Exposes two models:
 //
 //	– "echo"    — echoes the user message (streamed in 2-char chunks)
@@ -10,7 +10,7 @@
 //
 //	cd plugins/go-example && go build -o ../../bin/go-example .
 //
-// Wire into freellm-router config:
+// Wire into szmelc-router config:
 //
 //	providers:
 //	  - name: go-example
@@ -30,7 +30,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/silverx/freellm-router/pkg/pluginhost"
+	"github.com/silverx/szmelc-router/pkg/pluginhost"
 )
 
 // ---------------------------------------------------------------------------

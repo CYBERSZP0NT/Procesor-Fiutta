@@ -4,7 +4,7 @@
 **Status:** stable — implemented in `internal/providers/pluginproc`, hosted in
 `pkg/pluginhost`, referenced by `plugins/go-example` and `plugins/python-example`.
 
-This protocol lets **any process in any language** be a freellm-router
+This protocol lets **any process in any language** be a szmelc-router
 provider without Go code or recompiling. A plugin is a subprocess that speaks
 JSON-RPC 2.0 over stdio (LSP-style): requests on stdin, responses + stream
 notifications on stdout, logs on stderr.
@@ -35,7 +35,7 @@ routes:
   free: [myscraper/my-model, …]
 ```
 
-Declaration via CLI: `freellm-router providers add --name myscraper --impl
+Declaration via CLI: `szmelc-router providers add --name myscraper --impl
 plugin --kind plugin --command "python3 /opt/myscraper/server.py"`.
 
 ## Framing
@@ -133,7 +133,7 @@ while True:
         break
 ```
 
-Go plugins: import `github.com/silverx/freellm-router/pkg/pluginhost` — one
+Go plugins: import `github.com/silverx/szmelc-router/pkg/pluginhost` — one
 import, register `Models` / `Available` / `Stream`, call `Run()` (see
 `plugins/go-example`).
 

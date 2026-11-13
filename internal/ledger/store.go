@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/journal"
+	"github.com/silverx/szmelc-router/internal/journal"
 )
 
 // Sink receives events.

@@ -1,6 +1,6 @@
 # Integrations — copy-paste blocks
 
-Point any OpenAI-compatible client at freellm-router. The router listens on
+Point any OpenAI-compatible client at szmelc-router. The router listens on
 `http://<host>:8787/v1`, speaks exact OpenAI shapes (streaming `SSE` +
 non-streaming), and the `model` field accepts a route alias (`auto`, `free`,
 …), an exact `provider/model`, or a bare model id.
@@ -10,14 +10,14 @@ Base URL used below: `http://localhost:8787/v1`.
 ## Any script, harness or agent (no code changes)
 
 ```bash
-eval "$(freellm-router env --session my-run)"        # OPENAI_BASE_URL/API_BASE/API_KEY → the router
-freellm-router wrap --profile auto -- python agent.py   # run it as one tracked session
-answer=$(freellm-router exec -q "…") || exit $?        # one-shot from shell (exit 0/1/2/3)
+eval "$(szmelc-router env --session my-run)"        # OPENAI_BASE_URL/API_BASE/API_KEY → the router
+szmelc-router wrap --profile auto -- python agent.py   # run it as one tracked session
+answer=$(szmelc-router exec -q "…") || exit $?        # one-shot from shell (exit 0/1/2/3)
 ```
 
 `--profile auto` is infinite and fully automatic. `--profile control` gives
 you exact control, and pre-call hooks can veto calls. Every call shows up in
-`freellm-router history --session my-run` and in `freellm-router tui`.
+`szmelc-router history --session my-run` and in `szmelc-router tui`.
 Details: [control-and-observability.md](control-and-observability.md).
 
 ## OpenAI — Python SDK
@@ -161,7 +161,7 @@ model_list:
 
 ## MCP server
 
-freellm-router exposes an OpenAI endpoint, not MCP. Two clean ways to bridge
+szmelc-router exposes an OpenAI endpoint, not MCP. Two clean ways to bridge
 for MCP clients (Zed, Claude, VS Code MCP) — either one is ~10 lines:
 
 **Option 1 (recommended): a tiny MCP shim** wrapping the router:
@@ -194,7 +194,7 @@ ids `free`/`auto`.
 ## Go (embed the core, no server)
 
 ```go
-import "github.com/silverx/freellm-router/pkg/router"
+import "github.com/silverx/szmelc-router/pkg/router"
 
 r, _ := router.New(router.Config{
     Providers: []router.ProviderConfig{

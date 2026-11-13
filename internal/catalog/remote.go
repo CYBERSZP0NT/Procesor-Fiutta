@@ -15,7 +15,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/core"
 )
 
 // RemoteSource is one HTTP catalog feed. Adapters supply Parse; the base
@@ -56,7 +56,7 @@ func (r *RemoteSource) doFetch(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("%s: %w", r.Name, err)
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "freellm-router/1.0 (catalog)")
+	req.Header.Set("User-Agent", "szmelc-router/1.0 (catalog)")
 
 	resp, err := r.client().Do(req)
 	if err != nil {

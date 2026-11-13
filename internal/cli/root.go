@@ -1,4 +1,4 @@
-// Package cli implements the freellm-router command-line interface using
+// Package cli implements the szmelc-router command-line interface using
 // spf13/cobra. It provides subcommands: chat, models, probe, providers,
 // notes, config, and serve (stub for step 4).
 package cli
@@ -37,9 +37,9 @@ func globalTimeout() time.Duration {
 
 // rootCmd is the base command for the CLI.
 var rootCmd = &cobra.Command{
-	Use:   "freellm-router",
+	Use:   "szmelc-router",
 	Short: "One router over every free/cheap LLM source you have",
-	Long: `freellm-router routes chat completions across all your free and
+	Long: `szmelc-router routes chat completions across all your free and
 low-cost LLM providers with automatic fallback, key rotation, and
 cooldown management.
 
@@ -72,7 +72,7 @@ func SetVersionInfo(vert, cmt, dt string) {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&pCfgPath, "config", "", "path to config file (default: $FREELLM_CONFIG or ~/.config/freellm/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&pCfgPath, "config", "", "path to config file (default: $FREELLM_CONFIG or ~/.config/szmelc/config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&pProvider, "provider", "", "default provider filter")
 	rootCmd.PersistentFlags().StringVarP(&pModel, "model", "m", "", "default model / route alias")
 	rootCmd.PersistentFlags().IntVar(&pTimeoutSec, "timeout", 120, "per-request timeout (seconds)")

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/control"
-	"github.com/silverx/freellm-router/internal/core"
-	"github.com/silverx/freellm-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/control"
+	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/ledger"
 )
 
 // Limiter is a client-side quota budget consulted before every upstream
@@ -115,7 +115,7 @@ func (r *Router) dispatch(ctx context.Context, selector string, req *core.ChatRe
 	}
 
 	if res.Paused {
-		return nil, &VetoError{Reason: "router paused by operator (freellm-router ctl resume)"}
+		return nil, &VetoError{Reason: "router paused by operator (szmelc-router ctl resume)"}
 	}
 	if v := res.Hooks.RunPre(ctx, info); !v.Allow {
 		return nil, &VetoError{Reason: v.Reason}

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/silverx/freellm-router/internal/agentic"
-	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/agentic"
+	"github.com/silverx/szmelc-router/internal/config"
 )
 
 // defaultSpec is the embedded spec pinned to Jako Tako ("just enough"):

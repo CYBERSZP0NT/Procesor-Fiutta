@@ -15,7 +15,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/ledger"
 )
 
 var histOpts struct {
@@ -48,18 +48,18 @@ var historyCmd = &cobra.Command{
   http     other HTTP calls to the server (models, route, …)
 
 The ledger is the JSONL file the server and every CLI process append to
-(default ~/.local/share/freellm/usage.jsonl; config ledger.file).
+(default ~/.local/share/szmelc/usage.jsonl; config ledger.file).
 
 Examples:
-  freellm-router history                         # last 50 events
-  freellm-router log -f                          # follow live
-  freellm-router history --since 2h --errors     # failures, last 2 hours
-  freellm-router history --kind request,attempt --provider groq
-  freellm-router history --session build-42 -n 0 # one whole session
-  freellm-router history show 3f9a               # a request + its attempts
-  freellm-router history sessions                # per-session summaries
-  freellm-router history export --format csv > all.csv
-  freellm-router --json history --since today    # JSONL`,
+  szmelc-router history                         # last 50 events
+  szmelc-router log -f                          # follow live
+  szmelc-router history --since 2h --errors     # failures, last 2 hours
+  szmelc-router history --kind request,attempt --provider groq
+  szmelc-router history --session build-42 -n 0 # one whole session
+  szmelc-router history show 3f9a               # a request + its attempts
+  szmelc-router history sessions                # per-session summaries
+  szmelc-router history export --format csv > all.csv
+  szmelc-router --json history --since today    # JSONL`,
 	RunE: runHistory,
 }
 
@@ -308,7 +308,7 @@ func runHistorySessions(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 	if len(sess) == 0 {
-		fmt.Printf("no sessions in %s (start one: freellm-router wrap --session NAME -- <cmd>)\n", path)
+		fmt.Printf("no sessions in %s (start one: szmelc-router wrap --session NAME -- <cmd>)\n", path)
 		return nil
 	}
 	tw := tabwriter.NewWriter(os.Stdout, 2, 8, 2, ' ', 0)

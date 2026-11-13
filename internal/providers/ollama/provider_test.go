@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/core"
 )
 
 // fakeOllama creates an httptest server that mimics the Ollama native API.

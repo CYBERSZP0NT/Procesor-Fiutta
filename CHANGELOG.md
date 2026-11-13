@@ -1,9 +1,20 @@
 # Changelog
 
-All notable changes to freellm-router. Format loosely follows Keep a
-Changelog.
+All notable changes to szmelc-router (formerly freellm-router). Format
+loosely follows Keep a Changelog.
 
 ## [Unreleased]
+
+### Changed
+- **Renamed to szmelc-router.** The binary, `cmd/szmelc-router`, the Go
+  module (`github.com/silverx/szmelc-router`), Docker image and compose
+  project, `owned_by`/`service` fields and the User-Agent now carry the new
+  name. Per-user files move to `~/.config/szmelc/`, `$XDG_DATA_HOME/szmelc/`
+  and the user cache dir's `szmelc/`; existing `freellm/` files are still
+  read until a `szmelc/` one exists. `make install` and the Docker image keep
+  a `freellm-router` symlink. `FREELLM_*` env vars, `X-Freellm-*` headers,
+  `freellm_*` metrics and provider names are unchanged. Embedders must update
+  their import path.
 
 ### Added
 - **Event ledger.** One JSONL log of every request (failures included),

@@ -1,6 +1,6 @@
 # Agentic task router
 
-`model: "agent"` (or `"task"`) asks freellm-router to **pick the model per
+`model: "agent"` (or `"task"`) asks szmelc-router to **pick the model per
 request**. A fixed alias such as `auto` always walks the same chain. The task
 router reads what the request asks for and sends it to the model that is
 *just enough* for it. Tiny models label and extract. Mid models chat and
@@ -31,7 +31,7 @@ Ways to change it, from the narrowest scope to the widest:
 | one request | `"model": "agent:jako-tako"`, header `X-Freellm-Task-Mode: Jako Tako`, `metadata.task_mode`, or `chat --mode` / `route --mode` |
 | running server | `curl -X PUT localhost:8787/v1/route/mode -d '{"mode":"jako-tako"}'` (until restart; `GET` shows the current mode) |
 | process | env `FREELLM_TASK_MODE=jako-tako` (beats the config file) |
-| permanent | `freellm-router mode jako-tako` (writes `agentic.mode` to your config and keeps the rest of the file), or `agentic: {mode: jako-tako}` |
+| permanent | `szmelc-router mode jako-tako` (writes `agentic.mode` to your config and keeps the rest of the file), or `agentic: {mode: jako-tako}` |
 
 Any spelling works: `[Rozkład Jazdy]`, `rozklad jazdy`, `rozklad`, `max`,
 `Jako Tako`, `jt`. Within one request, the model suffix beats the
@@ -40,10 +40,10 @@ Any spelling works: `[Rozkład Jazdy]`, `rozklad jazdy`, `rozklad`, `max`,
 clients can pick a mode from their model picker.
 
 ```bash
-freellm-router route "hi"                                   # preview, no upstream call
-freellm-router route "refactor this service for concurrency" --all
-freellm-router route --catalog                              # catalog + live availability
-freellm-router chat --model agent --via "explain CRDTs"     # route for real
+szmelc-router route "hi"                                   # preview, no upstream call
+szmelc-router route "refactor this service for concurrency" --all
+szmelc-router route --catalog                              # catalog + live availability
+szmelc-router chat --model agent --via "explain CRDTs"     # route for real
 ```
 
 ```bash
@@ -124,7 +124,7 @@ If several overrides are given, the strongest one wins:
 | `POST /v1/route` | the same body as chat completions. Returns the decision as JSON (need, required tier, rules, winner, chain, every candidate with its rank and why it lost) **without** calling an upstream |
 | `GET /v1/route` | the effective spec: mode, modes, aliases, roles, rules, and the catalog with live availability |
 | `GET` / `PUT /v1/route/mode` | show or switch the default mode of the running server |
-| `GET /v1/models` | lists the aliases (`owned_by: freellm-router/agentic`), so Open WebUI and others can select them |
+| `GET /v1/models` | lists the aliases (`owned_by: szmelc-router/agentic`), so Open WebUI and others can select them |
 | Go: `pkg/router` | `IsTaskAlias`, `PlanTask`, `TaskSpec`, `TaskAvailability`, `RouteOpts.Task`, `Sinks.Task` |
 
 ## Configuring it
@@ -179,4 +179,4 @@ has billing, turn it on with
 `- {id: gemini-pro, model: "google/gemini-pro-latest", tier: 5, enabled: true}`.
 
 Tiers, costs and context sizes are judgment calls, not measurements. Edit them
-freely, then run `freellm-router route --catalog` to see the result.
+freely, then run `szmelc-router route --catalog` to see the result.

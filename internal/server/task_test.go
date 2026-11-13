@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/agentic"
-	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/agentic"
+	"github.com/silverx/szmelc-router/internal/config"
 )
 
 // newTaskTestServer serves the router (3-entry task catalog over one fake
@@ -163,7 +163,7 @@ func TestModelsListTaskAliases(t *testing.T) {
 	}
 	defer r.Body.Close()
 	b, _ := io.ReadAll(r.Body)
-	if !strings.Contains(string(b), `"id":"agent"`) || !strings.Contains(string(b), "freellm-router/agentic") {
+	if !strings.Contains(string(b), `"id":"agent"`) || !strings.Contains(string(b), "szmelc-router/agentic") {
 		t.Fatalf("models: %s", b)
 	}
 }

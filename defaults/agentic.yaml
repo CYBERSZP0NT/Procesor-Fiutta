@@ -1,5 +1,5 @@
 # ============================================================================
-# freellm-router — agentic task router (embedded data)
+# szmelc-router — agentic task router (embedded data)
 #
 # model "agent" (or "task", "agent:code:4", …) routes by WHAT the request
 # asks for instead of a fixed alias: role + complexity → required tier →
@@ -11,7 +11,7 @@
 # complexity 4-5. Tiers, costs, speeds and context sizes are judgment calls,
 # not measurements — edit freely in your config (`agentic:` section; entries
 # and rules replace by id). Every pick explains itself (X-Freellm-Task*
-# headers, POST /v1/route, `freellm-router route`).
+# headers, POST /v1/route, `szmelc-router route`).
 #
 #   tier   1 tiny (≤8B) · 2 small/mid · 3 70B-class · 4 strong · 5 strongest
 #   cost   0 free/local · 1 free tier with quota · 2+ burns paid credits
@@ -25,7 +25,7 @@
 #   jako-tako      "Jako Tako" — just enough: cheapest model that reaches
 #                  the required tier, stronger ones only as escalation
 # Per request: model "agent:jako-tako", header X-Freellm-Task-Mode,
-# metadata.task_mode. Runtime: PUT /v1/route/mode. CLI: freellm-router mode.
+# metadata.task_mode. Runtime: PUT /v1/route/mode. CLI: szmelc-router mode.
 mode: rozklad-jazdy
 
 aliases: [agent, task]

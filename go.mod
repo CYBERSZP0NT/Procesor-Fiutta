@@ -1,4 +1,4 @@
-module github.com/silverx/freellm-router
+module github.com/silverx/szmelc-router
 
 go 1.27.1
 

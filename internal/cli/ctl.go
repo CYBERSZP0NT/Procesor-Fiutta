@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/control"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/control"
 )
 
 var ctlOpts struct {
@@ -38,21 +38,21 @@ also write them to your config, or --local to only edit the config.
 With no server running, the config is edited.
 
 Examples:
-  freellm-router ctl                      # status
-  freellm-router ctl profile auto         # go infinite
-  freellm-router ctl profile control --save
-  freellm-router ctl pause / resume       # stop/allow all routing
-  freellm-router ctl disable groq mistral # take providers out
-  freellm-router ctl enable groq
-  freellm-router ctl allow ollama         # only these (ctl allow --clear)
-  freellm-router ctl fallback off         # on | off | default
-  freellm-router ctl forever on           # on | off | default
-  freellm-router ctl limits on            # enforce declared quotas
-  freellm-router ctl max-attempts 3
-  freellm-router ctl max-wait 10m         # forever-mode waiting cap (0 = none)
-  freellm-router ctl escalate free        # route tried after the chain (none to stop)
-  freellm-router ctl hook pre ./guard.sh  # veto/rewrite hook (hook pre --clear)
-  freellm-router ctl cooldowns            # list; ctl cooldowns clear [via]
+  szmelc-router ctl                      # status
+  szmelc-router ctl profile auto         # go infinite
+  szmelc-router ctl profile control --save
+  szmelc-router ctl pause / resume       # stop/allow all routing
+  szmelc-router ctl disable groq mistral # take providers out
+  szmelc-router ctl enable groq
+  szmelc-router ctl allow ollama         # only these (ctl allow --clear)
+  szmelc-router ctl fallback off         # on | off | default
+  szmelc-router ctl forever on           # on | off | default
+  szmelc-router ctl limits on            # enforce declared quotas
+  szmelc-router ctl max-attempts 3
+  szmelc-router ctl max-wait 10m         # forever-mode waiting cap (0 = none)
+  szmelc-router ctl escalate free        # route tried after the chain (none to stop)
+  szmelc-router ctl hook pre ./guard.sh  # veto/rewrite hook (hook pre --clear)
+  szmelc-router ctl cooldowns            # list; ctl cooldowns clear [via]
 
 Per request: headers X-Freellm-Profile / -Fallback / -Forever /
 -Max-Attempts / -Session / -Tags, or exec --profile/--forever/--no-fallback.`,

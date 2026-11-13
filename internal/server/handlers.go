@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/core"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 // ---------------------------------------------------------------------------
@@ -31,14 +31,14 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 	data := make([]oaModel, 0, 16)
 	seen := make(map[string]bool, 64)
 
-	// 1) Route aliases first (owned_by = freellm-router).
+	// 1) Route aliases first (owned_by = szmelc-router).
 	aliases := make([]string, 0, len(s.cfg.Routes))
 	for name := range s.cfg.Routes {
 		aliases = append(aliases, name)
 	}
 	sort.Strings(aliases)
 	for _, name := range aliases {
-		data = append(data, oaModel{ID: name, Object: "model", Created: now, OwnedBy: "freellm-router"})
+		data = append(data, oaModel{ID: name, Object: "model", Created: now, OwnedBy: "szmelc-router"})
 		seen[name] = true
 	}
 
@@ -52,7 +52,7 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, id := range ids {
 			if !seen[id] {
-				data = append(data, oaModel{ID: id, Object: "model", Created: now, OwnedBy: "freellm-router/agentic"})
+				data = append(data, oaModel{ID: id, Object: "model", Created: now, OwnedBy: "szmelc-router/agentic"})
 				seen[id] = true
 			}
 		}
@@ -286,7 +286,7 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"service": "freellm-router",
+		"service": "szmelc-router",
 		"endpoints": []string{
 			"POST /v1/chat/completions",
 			"POST /chat/completions",

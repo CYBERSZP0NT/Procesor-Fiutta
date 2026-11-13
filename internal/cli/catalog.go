@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/catalog"
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/catalog"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/core"
 )
 
 // resolveCatalog builds the merged catalog from config and resolves it once

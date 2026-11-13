@@ -1,9 +1,10 @@
-# freellm-router — Makefile
+# szmelc-router — Makefile
 # Targets: build, test, lint, clean, install, release
 
-BINARY      ?= freellm-router
-PKG         := github.com/silverx/freellm-router
-CMD         := ./cmd/freellm-router
+BINARY      ?= szmelc-router
+PKG         := github.com/silverx/szmelc-router
+CMD         := ./cmd/szmelc-router
+GOBIN_DIR   := $(or $(shell go env GOBIN),$(shell go env GOPATH)/bin)
 VERSION     := $(shell git describe --tags --always 2>/dev/null || echo dev)
 COMMIT      := $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
 DATE        := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -55,7 +56,9 @@ clean: ## Remove build artifacts
 .PHONY: install
 install: ## Install to GOPATH/bin or /usr/local/bin
 	go install -ldflags "$(LDFLAGS)" $(CMD)
-	@echo "Installed freellm-router to $(shell go env GOPATH)/bin"
+	@# Legacy name from before the szmelc-router rebrand, kept as a symlink.
+	ln -sf szmelc-router "$(GOBIN_DIR)/freellm-router"
+	@echo "Installed szmelc-router (+ freellm-router symlink) to $(GOBIN_DIR)"
 
 .PHONY: release
 release: ## Cross-compile release binaries into dist/ + SHA256SUMS

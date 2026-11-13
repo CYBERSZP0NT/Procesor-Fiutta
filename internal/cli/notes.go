@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/config"
 )
 
 var notesCmd = &cobra.Command{
@@ -20,9 +20,9 @@ provider. The data comes from the ` + "`notes`" + ` field in defaults/providers.
 and any user config overrides — nothing is hardcoded in Go.
 
 Examples:
-  freellm-router notes
-  freellm-router notes --provider groq
-  freellm-router --json notes`,
+  szmelc-router notes
+  szmelc-router notes --provider groq
+  szmelc-router --json notes`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load(pCfgPath)
 		if err != nil {

@@ -1,5 +1,5 @@
 # ============================================================================
-# freellm-router — default routes (embedded data)
+# szmelc-router — default routes (embedded data)
 #
 # Route format:  provider/model
 #   – the segment before the FIRST "/" is the provider name

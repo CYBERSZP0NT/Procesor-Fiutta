@@ -10,10 +10,10 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/silverx/freellm-router/internal/control"
-	"github.com/silverx/freellm-router/internal/ledger"
-	"github.com/silverx/freellm-router/internal/usage"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/control"
+	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/usage"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 type tab int
@@ -690,7 +690,7 @@ func (m Model) controlItems() []controlItem {
 				s.Escalate = control.String(next)
 			}
 		}},
-		{label: "Pre-call hook", value: dashIf(strings.Join(s.Hooks.PreCall, " ")) + "  (set: freellm-router ctl hook pre …)"},
+		{label: "Pre-call hook", value: dashIf(strings.Join(s.Hooks.PreCall, " ")) + "  (set: szmelc-router ctl hook pre …)"},
 		{label: fmt.Sprintf("Clear cooldowns (%d active)", len(m.ctl.Cooldowns)), special: "cooldowns"},
 		{label: "Save to config file", special: "save"},
 	}

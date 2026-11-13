@@ -16,11 +16,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/control"
-	"github.com/silverx/freellm-router/internal/ledger"
-	"github.com/silverx/freellm-router/internal/server"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/control"
+	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/server"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 // Exit codes of `exec` (stable: scripts branch on them).
@@ -78,7 +78,7 @@ var execCmd = &cobra.Command{
 script, Makefile, CI job or agent harness.
 
 The prompt is the arguments; piped stdin is added as context (so
-"git diff | freellm-router exec 'review this'" works). A harness that keeps
+"git diff | szmelc-router exec 'review this'" works). A harness that keeps
 a stdin pipe open without writing to it should pass --no-stdin (or set
 FREELLM_NO_STDIN=1), as should calls inside a "while read" loop. The answer goes to
 stdout, diagnostics to stderr. --json prints one JSON object with text,
@@ -99,11 +99,11 @@ Every call is in the ledger (history), tagged with --session or
 $FREELLM_SESSION.
 
 Examples:
-  freellm-router exec "summarize this" < notes.md
-  git diff | freellm-router ask -m code "review this diff" --json
-  freellm-router exec --profile auto --deadline 1h "…"      # never give up (within 1h)
-  freellm-router exec --profile control -m groq/llama-3.3-70b-versatile "…"
-  answer=$(freellm-router exec -q "one word: capital of France") || exit $?`,
+  szmelc-router exec "summarize this" < notes.md
+  git diff | szmelc-router ask -m code "review this diff" --json
+  szmelc-router exec --profile auto --deadline 1h "…"      # never give up (within 1h)
+  szmelc-router exec --profile control -m groq/llama-3.3-70b-versatile "…"
+  answer=$(szmelc-router exec -q "one word: capital of France") || exit $?`,
 	RunE: runExec,
 }
 
@@ -298,11 +298,11 @@ With --session, the base URL carries the session (…/s/<id>/v1), so every
 call from that tool is grouped in history — no custom headers needed.
 
 Examples:
-  eval "$(freellm-router env)"
-  eval "$(freellm-router env --session nightly-refactor)"
-  freellm-router env --shell fish | source
-  freellm-router env --shell dotenv >> .env
-  freellm-router env --shell json`,
+  eval "$(szmelc-router env)"
+  eval "$(szmelc-router env --session nightly-refactor)"
+  szmelc-router env --shell fish | source
+  szmelc-router env --shell dotenv >> .env
+  szmelc-router env --shell json`,
 	RunE: runEnv,
 }
 
@@ -399,10 +399,10 @@ When the command exits, a session summary is printed to stderr and the
 command's exit code is returned.
 
 Examples:
-  freellm-router wrap -- python agent.py
-  freellm-router wrap --session refactor-42 --profile auto -- aider
-  freellm-router wrap --profile control -- ./my-harness.sh --task x
-  freellm-router history --session refactor-42`,
+  szmelc-router wrap -- python agent.py
+  szmelc-router wrap --session refactor-42 --profile auto -- aider
+  szmelc-router wrap --profile control -- ./my-harness.sh --task x
+  szmelc-router history --session refactor-42`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runWrap,
 }
@@ -555,6 +555,6 @@ func printSessionSummary(cfg *config.Config, session string) {
 	for _, s := range ledger.Sessions(f.Apply(evs)) {
 		fmt.Fprintf(os.Stderr, "\nfreellm session %s: %d requests (%d failed), %d upstream calls, %s tokens, providers %s\n",
 			s.ID, s.Requests, s.Errors, s.Attempts, compact(s.Tokens), providerList(s.Providers))
-		fmt.Fprintf(os.Stderr, "  → freellm-router history --session %s\n", s.ID)
+		fmt.Fprintf(os.Stderr, "  → szmelc-router history --session %s\n", s.ID)
 	}
 }

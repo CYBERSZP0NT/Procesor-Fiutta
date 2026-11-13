@@ -42,9 +42,9 @@ jobs:
           # Keep the smoke deterministic: only point the router at a local fake.
           G4F_URL: "http://127.0.0.1:1" # unreachable on purpose for keyless g4f
         run: |
-          go build -o freellm-router ./cmd/freellm-router
-          ./freellm-router config validate
-          ./freellm-router serve --port 18080 >/tmp/srv.log 2>&1 &
+          go build -o szmelc-router ./cmd/szmelc-router
+          ./szmelc-router config validate
+          ./szmelc-router serve --port 18080 >/tmp/srv.log 2>&1 &
           SRV=$!
           sleep 1
           curl -fsS "http://127.0.0.1:18080/v1/models" >/dev/null

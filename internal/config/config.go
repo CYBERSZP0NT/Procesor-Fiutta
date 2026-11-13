@@ -1,8 +1,8 @@
 // Package config implements the 3-layer configuration loader for
-// freellm-router:
+// szmelc-router:
 //
 //  1. embedded defaults (defaults/*.yaml via go:embed)
-//  2. user config file (~/.config/freellm/config.yaml or $FREELLM_CONFIG)
+//  2. user config file (~/.config/szmelc/config.yaml or $FREELLM_CONFIG)
 //  3. environment-variable overlay (FREELLM_PORT, FREELLM_HOST, …)
 //
 // The final step is ${VAR:-default} expansion over all string fields.
@@ -17,9 +17,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/silverx/freellm-router/defaults"
-	"github.com/silverx/freellm-router/internal/agentic"
-	"github.com/silverx/freellm-router/internal/control"
+	"github.com/silverx/szmelc-router/defaults"
+	"github.com/silverx/szmelc-router/internal/agentic"
+	"github.com/silverx/szmelc-router/internal/appdir"
+	"github.com/silverx/szmelc-router/internal/control"
 	"gopkg.in/yaml.v3"
 )
 
@@ -65,7 +66,7 @@ func (l Limits) IsZero() bool { return l.RPM == 0 && l.RPD == 0 && l.TPM == 0 &&
 
 // LedgerConfig configures the event log.
 type LedgerConfig struct {
-	// File is the ledger path (default $XDG_DATA_HOME/freellm/usage.jsonl;
+	// File is the ledger path (default $XDG_DATA_HOME/szmelc/usage.jsonl;
 	// server.usage_file is honoured for compatibility).
 	File string `yaml:"file,omitempty"`
 	// Disabled turns event logging off everywhere.
@@ -112,7 +113,7 @@ type ServerConfig struct {
 	KeyFile      string     `yaml:"key,omitempty"`
 	// Rate-limit (per key, token bucket). 0 = disabled.
 	RateLimitPerKeyPerMin int `yaml:"rate_limit_per_key_per_min,omitempty"`
-	// Usage JSONL file (empty = default under $XDG_DATA_HOME/freellm/usage.jsonl).
+	// Usage JSONL file (empty = default under $XDG_DATA_HOME/szmelc/usage.jsonl).
 	UsageFile string `yaml:"usage_file,omitempty"`
 	// Usage journal rotation: max bytes per file (0 = default 10 MiB) and
 	// how many rotated files to keep (0 = default 3).
@@ -184,7 +185,7 @@ type LoggingConfig struct {
 // Arguments:
 //
 //	– explicitPath: if non-empty, loaded as the user config file.
-//	  Otherwise $FREELLM_CONFIG or ~/.config/freellm/config.yaml is tried.
+//	  Otherwise $FREELLM_CONFIG or ~/.config/szmelc/config.yaml is tried.
 func Load(explicitPath string) (*Config, error) {
 	// Layer 1: embedded defaults
 	base, err := loadDefaults()
@@ -279,7 +280,7 @@ func resolveConfigPath(explicit string) string {
 	if err != nil {
 		return ""
 	}
-	candidate := filepath.Join(home, ".config", "freellm", "config.yaml")
+	candidate := appdir.File(filepath.Join(home, ".config"), "config.yaml")
 	if _, err := os.Stat(candidate); err == nil {
 		return candidate
 	}

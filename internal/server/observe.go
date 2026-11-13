@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/control"
-	"github.com/silverx/freellm-router/internal/ledger"
-	"github.com/silverx/freellm-router/internal/usage"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/control"
+	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/usage"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 // registerObservability adds the usage / history / sessions / control API.

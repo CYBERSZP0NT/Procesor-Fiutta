@@ -1,7 +1,7 @@
-# AGENTS.md — freellm-router (Go rewrite)
+# AGENTS.md — szmelc-router (Go rewrite)
 
 Goal: replace `freellm_router.py` with a single, statically-friendly **Go binary**
-(`router` / `freellm-router`) that routes across every free/cheap LLM source we
+(`router` / `szmelc-router`) that routes across every free/cheap LLM source we
 have, is fully **config/data-driven (no hardcoded providers, routes or models)**,
 exposes a **standard OpenAI-compatible API**, a **friendly CLI**, and a **library
 surface** — and makes adding new token/inference sources (see `MORE.md`) a
@@ -42,7 +42,7 @@ rework earlier steps' public contracts unless a step explicitly says so.
 ## Architecture (the contract — all steps agree on this)
 
 ```
-cmd/freellm-router/        main.go (thin: wires plugins + calls core)
+cmd/szmelc-router/        main.go (thin: wires plugins + calls core)
 internal/core/             domain: types, resolver, router (fallback engine),
                            keyring, cooldown store, catalog, config
 internal/config/           config loading: defaults < file < env overlay
@@ -129,7 +129,7 @@ without hassle" guarantee: **(a) if it's OpenAI-compatible → 3 lines of config
 
 ### Configuration (single source of truth)
 
-`~/.config/freellm/config.yaml` (or `$FREELLM_CONFIG`), layered over embedded
+`~/.config/szmelc/config.yaml` (or `$FREELLM_CONFIG`), layered over embedded
 defaults, then `${ENV_VAR}` expansion + a `.env` loader.
 
 ```yaml
@@ -154,7 +154,7 @@ logging: {level: info, format: json|pretty, file: ""}
 
 **Goal:** repo compiles, config system + core types exist, zero HTTP yet.
 
-- `go mod init github.com/<you>/freellm-router`; directory layout above;
+- `go mod init github.com/<you>/szmelc-router`; directory layout above;
   `Makefile` (build/test/lint/release), `.gitignore` update, gofmt/vet green.
 - `internal/config`: schema structs matching the YAML above; loader with
   3-layer merge (embedded defaults in `defaults/*.yaml` via `go:embed` →
@@ -216,7 +216,7 @@ mock, no core edits.
 
 **Goal:** the daily-driver surface, parity + polish over the python CLI.
 
-- `internal/cli` + `cmd/freellm-router/main.go`; global flags `--config`, `--provider`,
+- `internal/cli` + `cmd/szmelc-router/main.go`; global flags `--config`, `--provider`,
   `--model`, `--timeout`, `--json`; subcommands:
   - `chat "prompt" [--system …] [--no-stream] [--max-tokens N] [--temperature f] [--via label]`
     (stream to stdout, TTY colorize with pterm when pretty logging on,
@@ -237,7 +237,7 @@ mock, no core edits.
 - Tests: golden outputs for `models --json`, `config validate` failures,
   `chat` against a `httptest` fake (set config to point at it), `probe` filtering.
 
-**Exit criteria:** `freellm-router chat "hi" --model free` works against fakes;
+**Exit criteria:** `szmelc-router chat "hi" --model free` works against fakes;
 all `--help` texts complete; `make install` gives a working binary;
 `providers add` with a MORE.md entry routes through it.
 
@@ -392,7 +392,7 @@ zero secret leakage in logs/metrics/journal.
   python3 setup action).
 
 **Exit criteria:** fresh machine: one command (curl-installer or
-`make install`) → `freellm-router serve` → an OpenAI SDK chat succeeds with
+`make install`) → `szmelc-router serve` → an OpenAI SDK chat succeeds with
 `model=free` (keyless stack, docker compose) — the headline demo.
 
 ---

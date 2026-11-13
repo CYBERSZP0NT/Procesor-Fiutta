@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/core"
-	openailike "github.com/silverx/freellm-router/internal/providers/openailike"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/core"
+	openailike "github.com/silverx/szmelc-router/internal/providers/openailike"
 )
 
 // helper: create a provider key-source that returns specific keys

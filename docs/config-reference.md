@@ -3,20 +3,20 @@
 Generated from the schema in `internal/config/config.go` + the embedded
 defaults in `defaults/providers.yaml` / `defaults/routes.yaml`
 (v1.0.0-rc1). If code and this page ever disagree, **the code wins**; the
-canonical way to check is `freellm-router config show` (full resolved YAML).
+canonical way to check is `szmelc-router config show` (full resolved YAML).
 
 ## Layers & resolution order
 
 1. **Embedded defaults** — `defaults/providers.yaml` (43 sources) +
    `defaults/routes.yaml` (alias chains). Bundled in the binary; offline-safe.
-2. **Config file** — `$FREELLM_CONFIG`, else `~/.config/freellm/config.yaml`.
-   `freellm-router config init` writes a full commented default there.
+2. **Config file** — `$FREELLM_CONFIG`, else `~/.config/szmelc/config.yaml`.
+   `szmelc-router config init` writes a full commented default there.
 3. **Environment overlay** — `FREELLM_HOST`, `FREELLM_PORT`,
    `FREELLM_LOG_LEVEL`, `FREELLM_LOG_FORMAT`, plus a loaded `.env` file.
 4. **`${VAR}` / `${VAR:-default}` expansion** — applied to every string field
    after merging.
 
-Validation runs after expansion: `freellm-router config validate` is the fast
+Validation runs after expansion: `szmelc-router config validate` is the fast
 check (unknown `impl`, bad `kind`, missing `base_url` for HTTP impls,
 duplicate names, routes referencing unknown providers, port range, etc.).
 
@@ -103,7 +103,7 @@ providers:
 | `max_body_bytes` | int | 4 MiB | request body cap |
 | `cert` / `key` | paths | — | enable TLS when both set (or `--cert`/`--key`) |
 | `rate_limit_per_key_per_min` | int | 0 (off) | token bucket per bearer key |
-| `usage_file` | path | `$XDG_DATA_HOME/freellm/usage.jsonl` | JSONL journal file (empty = default) |
+| `usage_file` | path | `$XDG_DATA_HOME/szmelc/usage.jsonl` | JSONL journal file (empty = default) |
 | `usage_max_bytes` | int | 10 MiB | per-file journal size before rotation |
 | `usage_keep` | int | 3 | rotated files to keep (`.1`, `.2`, `.3`) |
 | `middleware_off` | `[]string` | `[]` | disable default middlewares: `logging` \| `cors` \| `auth` \| `ratelimit` \| `usage` |
@@ -184,7 +184,7 @@ Catalog entries and rules replace defaults by `id` (new ids are appended),
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `enabled` | bool | `true` | turn the task router on or off |
-| `mode` | string | `rozklad-jazdy` | default mode: `rozklad-jazdy` ([Rozkład Jazdy], all in) or `jako-tako` (Jako Tako, just enough). Env `FREELLM_TASK_MODE` overrides it; `freellm-router mode <id>` writes it |
+| `mode` | string | `rozklad-jazdy` | default mode: `rozklad-jazdy` ([Rozkład Jazdy], all in) or `jako-tako` (Jako Tako, just enough). Env `FREELLM_TASK_MODE` overrides it; `szmelc-router mode <id>` writes it |
 | `aliases` | []string | `[agent, task]` | model names that trigger it (`agent:code:4` suffixes force role and complexity) |
 | `below_tier_fallback` | bool | `true` | append weaker models at the end of the chain as a last resort |
 | `escalations` | int | `1` | times an empty or filtered non-stream answer is retried one tier up |
@@ -218,7 +218,7 @@ enforced as a budget when `control.enforce_limits` is in effect.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
-| `file` | string | `$XDG_DATA_HOME/freellm/usage.jsonl` | ledger path (`server.usage_file` is honoured when this is empty) |
+| `file` | string | `$XDG_DATA_HOME/szmelc/usage.jsonl` | ledger path (`server.usage_file` is honoured when this is empty) |
 | `disabled` | bool | `false` | no event logging anywhere |
 | `content` | string | `preview` | prompt/answer capture: `off`, `preview` (200 chars), `full` |
 | `max_bytes` | int | 10 MiB | server rotation size |
@@ -248,6 +248,6 @@ Each set key overrides the profile preset. See
 ## Free-tier notes
 
 Machine-readable, nothing hardcoded: every provider entry's `notes:` field is
-surfaced by `freellm-router notes`, `freellm-router models --tier`,
+surfaced by `szmelc-router notes`, `szmelc-router models --tier`,
 `GET /v1/models` (per-model tier notes), and `GET /v1/notes`. The canonical
 data lives in `defaults/providers.yaml`; user config `notes` overrides it.

@@ -3,14 +3,14 @@
 Plugin: python-example
 ======================
 
-A reference Python plugin implementing the freellm-router JSON-RPC 2.0
+A reference Python plugin implementing the szmelc-router JSON-RPC 2.0
 stdio protocol. Demonstrates:
   – initialize handshake
   – models catalogue
   – availability check
   – streaming response (text_delta notifications + done result)
 
-Wire into freellm-router config:
+Wire into szmelc-router config:
   providers:
     - name: python-example
       impl: plugin
