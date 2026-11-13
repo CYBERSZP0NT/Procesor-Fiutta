@@ -17,8 +17,13 @@ sha256sums=('SKIP')
 
 pkgver() {
   cd "${pkgname}"
-  ( git describe --long --tags --abbrev=7 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' ) ||
+  local desc
+  if desc="$(git describe --long --tags --abbrev=7 2>/dev/null)"; then
+    # v1.0.0-rc1-5-gabc1234 -> 1.0.0rc1.r5.gabc1234 (no '-' allowed in pkgver)
+    printf "%s" "${desc}" | sed 's/^v//;s/-\(rc\|beta\|alpha\)/\1/;s/\([^-]*-g\)/r\1/;s/-/./g'
+  else
     printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+  fi
 }
 
 prepare() {
