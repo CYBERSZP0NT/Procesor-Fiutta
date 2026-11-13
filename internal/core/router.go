@@ -72,9 +72,20 @@ type RouteResult struct {
 // successful response. On all-fail it returns the last *UpstreamErr wrapped
 // in a descriptive error.
 func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest, out *StreamOut) (*RouteResult, error) {
-	// 1. Resolve the chain via policy.
-	known := r.knownModels(ctx)
-	chain := r.policy.Resolve(ctx, sel, known)
+	// 1. Resolve the chain: a pre-resolved chain (agentic task router) wins;
+	// otherwise ask the policy. The live model listing is only gathered for
+	// policies that declare they read it — it costs one /models request per
+	// provider, so doing it on every request was pure latency.
+	var chain []Model
+	if len(sel.Chain) > 0 {
+		chain = sel.Chain
+	} else {
+		var known map[string]Model
+		if kp, ok := r.policy.(KnownModelsPolicy); ok && kp.UsesKnownModels() {
+			known = r.knownModels(ctx)
+		}
+		chain = r.policy.Resolve(ctx, sel, known)
+	}
 	if len(chain) == 0 {
 		return nil, fmt.Errorf("router: no chain resolved for selector %q", sel.Name)
 	}
