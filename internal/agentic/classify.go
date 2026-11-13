@@ -16,11 +16,12 @@ type Msg struct {
 // Need is what a task asks for.
 type Need struct {
 	Role       string   `json:"role"`
-	Complexity int      `json:"complexity"` // 1-5
-	Tools      bool     `json:"tools"`      // the request carries tool definitions
-	Local      bool     `json:"local"`      // keep it on this machine
-	Tokens     int      `json:"tokens"`     // rough prompt size (chars/4)
-	Source     string   `json:"source"`     // heuristic | metadata | header | model
+	Complexity int      `json:"complexity"`     // 1-5
+	Mode       string   `json:"mode,omitempty"` // empty = the spec's mode
+	Tools      bool     `json:"tools"`          // the request carries tool definitions
+	Local      bool     `json:"local"`          // keep it on this machine
+	Tokens     int      `json:"tokens"`         // rough prompt size (chars/4)
+	Source     string   `json:"source"`         // heuristic | metadata | header | model
 	Signals    []string `json:"signals,omitempty"`
 }
 
@@ -155,16 +156,18 @@ func clamp(v, lo, hi int) int {
 
 // Override is a forced role/complexity from the caller.
 type Override struct {
+	Mode       string
 	Role       string
 	Complexity int
 	Local      bool
 }
 
-// ParseOverride reads "code", "4", "code:4", "code:4:local", "local" or
-// "role=code, complexity=4, local". Unknown words are ignored.
+// ParseOverride reads "code", "4", "code:4", "code:4:local", "local",
+// "jako-tako:code", "[Rozkład Jazdy]" or "mode=jako-tako, role=code,
+// complexity=4, local". Unknown words are ignored.
 func ParseOverride(s string) Override {
 	var o Override
-	s = strings.ToLower(strings.TrimSpace(s))
+	s = joinModeWords(strings.ToLower(strings.TrimSpace(s)))
 	if s == "" {
 		return o
 	}
@@ -173,6 +176,10 @@ func ParseOverride(s string) Override {
 		k, v, kv := strings.Cut(p, "=")
 		if !kv {
 			v = k
+		}
+		if m, ok := NormalizeMode(v); ok && (!kv || k == "mode") {
+			o.Mode = m
+			continue
 		}
 		switch {
 		case v == "local" || (kv && k == "local" && (v == "1" || v == "true" || v == "yes")):
@@ -207,6 +214,9 @@ func isRole(s string) bool {
 // Apply layers an override onto n and records where it came from.
 func (n *Need) Apply(o Override, source string) {
 	changed := false
+	if o.Mode != "" {
+		n.Mode = o.Mode // Source tracks role/complexity, not the mode
+	}
 	if o.Role != "" {
 		n.Role, changed = o.Role, true
 	}

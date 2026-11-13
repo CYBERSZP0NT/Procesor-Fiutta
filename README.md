@@ -76,7 +76,11 @@ If provider A 429s, provider B just takes over — the client sees one
 ## Agentic task router — `model: "agent"`
 
 Built in, no extra service. Instead of a fixed chain, `agent` picks the
-model **per request**:
+model **per request**. There are two modes:
+
+- **[Rozkład Jazdy]** is the default. It always goes all in: the strongest
+  available model with the biggest context, whatever the task, at any cost.
+- **Jako Tako** is "just enough":
 
 1. It classifies the last user message into a role (`chat`, `code`,
    `review`, `plan`, `summarize`, …) and a complexity from 1 to 5.
@@ -84,8 +88,10 @@ model **per request**:
 3. It routes the cheapest sufficient model first, then stronger ones as
    escalation, then weaker ones as a best effort.
 
-A tiny model says hi, a 70B writes the mail, and the strongest model you have
-is kept for the hard refactor. Empty or filtered non-stream answers are
+In Jako Tako, a tiny model says hi, a 70B writes the mail, and the strongest
+model you have is kept for the hard refactor. Switch the mode with
+`freellm-router mode jako-tako`, `PUT /v1/route/mode`, `FREELLM_TASK_MODE`, or
+per request with `agent:jako-tako`. Empty or filtered non-stream answers are
 retried one tier up. Every pick explains itself:
 
 ```bash

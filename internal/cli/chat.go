@@ -21,6 +21,7 @@ type chatOpts struct {
 	maxTokens   int
 	temperature float64
 	showVia     bool
+	mode        string
 }
 
 var chatOptsVar = &chatOpts{}
@@ -47,6 +48,7 @@ func init() {
 	chatCmd.Flags().IntVar(&chatOptsVar.maxTokens, "max-tokens", 0, "max tokens to generate (0 = upstream default)")
 	chatCmd.Flags().Float64Var(&chatOptsVar.temperature, "temperature", 0, "sampling temperature (0.0-2.0, 0 = upstream default)")
 	chatCmd.Flags().BoolVar(&chatOptsVar.showVia, "via", false, "print the routing path used after the response")
+	chatCmd.Flags().StringVar(&chatOptsVar.mode, "mode", "", "task-router mode for this call (rozklad-jazdy | jako-tako); implies --model agent when no model is given")
 }
 
 func runChat(cmd *cobra.Command, args []string) error {
@@ -71,6 +73,15 @@ func runChat(cmd *cobra.Command, args []string) error {
 	selector := pModel
 	if selector == "" {
 		selector = "auto"
+		if chatOptsVar.mode != "" {
+			selector = "agent"
+		}
+	}
+	if chatOptsVar.mode != "" {
+		if !r.IsTaskAlias(selector) {
+			return fmt.Errorf("--mode needs a task-router model (agent), got %q", selector)
+		}
+		selector += ":" + chatOptsVar.mode
 	}
 
 	var maxTokens *int
@@ -82,9 +93,11 @@ func runChat(cmd *cobra.Command, args []string) error {
 		temperature = &chatOptsVar.temperature
 	}
 
+	var decision *router.TaskDecision
 	opts := &router.RouteOpts{
 		MaxTokens:   maxTokens,
 		Temperature: temperature,
+		Task:        &router.TaskHints{OnDecision: func(d *router.TaskDecision) { decision = d }},
 	}
 
 	ctx, cancel := context.WithCancel(cmd.Context())
@@ -116,7 +129,8 @@ func runChat(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 	} else {
 		var err error
-		via, done, err := r.RouteWithOptions(ctx, selector, messages, "", opts, nil)
+		var done *router.Done
+		via, done, err = r.RouteWithOptions(ctx, selector, messages, "", opts, nil)
 		if err != nil {
 			return err
 		}
@@ -147,9 +161,10 @@ func runChat(cmd *cobra.Command, args []string) error {
 
 	if chatOptsVar.showVia && !pJSON {
 		fmt.Fprintf(os.Stderr, "\n↳ via %s\n", via)
-		if r.IsTaskAlias(selector) {
-			if d, err := r.PlanTask(ctx, selector, messages, false, nil); err == nil {
-				fmt.Fprintf(os.Stderr, "↳ task %s\n", d.Reason)
+		if decision != nil {
+			fmt.Fprintf(os.Stderr, "↳ task %s\n", decision.Reason)
+			if decision.Winner != nil && decision.Via != "" && decision.Via != decision.Winner.Model {
+				fmt.Fprintf(os.Stderr, "↳ %s failed or was unavailable, served by fallback %s\n", decision.Winner.Model, decision.Via)
 			}
 		}
 	}

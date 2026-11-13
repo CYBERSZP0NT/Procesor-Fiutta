@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/silverx/freellm-router/internal/agentic"
 	"github.com/silverx/freellm-router/internal/core"
@@ -22,6 +23,9 @@ type TaskDecision = agentic.Decision
 // TaskCandidate is a catalog entry as one decision saw it (rank, why it lost).
 type TaskCandidate = agentic.Candidate
 
+// TaskModeInfo describes a task-router mode ([Rozkład Jazdy], Jako Tako).
+type TaskModeInfo = agentic.ModeInfo
+
 // TaskEntry is one catalog entry of the task router.
 type TaskEntry = agentic.Entry
 
@@ -32,14 +36,21 @@ type TaskHints struct {
 	// Override is e.g. the X-Freellm-Task header: "code:4", "role=plan", "local".
 	Override string
 	// Metadata is the OpenAI "metadata" object: "task" ("code:4"), or
-	// "task_role", "task_complexity", "task_local".
+	// "task_role", "task_complexity", "task_local", "task_mode".
 	Metadata map[string]string
+	// Mode is e.g. the X-Freellm-Task-Mode header ("jako-tako",
+	// "[Rozkład Jazdy]"); it beats metadata, the model suffix beats it.
+	Mode string
+	// OnDecision, when set, receives the decisions like Sinks.Task does
+	// (for Route/RouteWithOptions callers, which have no Sinks).
+	OnDecision func(*TaskDecision)
 }
 
 // taskRouter is the compiled task-router state of a Router.
 type taskRouter struct {
 	spec   agentic.Spec
 	routes map[string]bool // configured route names win over task aliases
+	mode   atomic.Value    // string: current default mode (SetTaskMode)
 }
 
 func newTaskRouter(user *agentic.Spec, kinds map[string]string, routes map[string][]string) (*taskRouter, error) {
@@ -69,8 +80,37 @@ func newTaskRouter(user *agentic.Spec, kinds map[string]string, routes map[strin
 	for name := range routes {
 		rs[strings.ToLower(name)] = true
 	}
-	return &taskRouter{spec: spec, routes: rs}, nil
+	tr := &taskRouter{spec: spec, routes: rs}
+	tr.mode.Store(spec.EffectiveMode())
+	return tr, nil
 }
+
+// TaskMode returns the current default mode id ("rozklad-jazdy" unless
+// configured or switched).
+func (r *Router) TaskMode() string {
+	if r.task == nil {
+		return agentic.DefaultMode
+	}
+	return r.task.mode.Load().(string)
+}
+
+// SetTaskMode switches the default mode for every following request (any
+// spelling NormalizeMode accepts). It returns the normalized id. Requests
+// can still pick their own mode.
+func (r *Router) SetTaskMode(mode string) (string, error) {
+	id, ok := agentic.NormalizeMode(mode)
+	if !ok {
+		return "", fmt.Errorf("unknown task-router mode %q (rozklad-jazdy | jako-tako)", mode)
+	}
+	if r.task == nil {
+		return "", fmt.Errorf("agentic task router is disabled")
+	}
+	r.task.mode.Store(id)
+	return id, nil
+}
+
+// TaskModes lists the available modes, default first.
+func TaskModes() []TaskModeInfo { return agentic.Modes }
 
 // IsTaskAlias reports whether selector goes through the task router
 // ("agent", "task", "agent:code:4", …). A configured route with the same
@@ -161,12 +201,21 @@ func (r *Router) taskNeed(selector string, msgs []core.Message, tools bool, h *T
 			if v := strings.ToLower(md["task_local"]); v == "1" || v == "true" || v == "yes" {
 				o.Local = true
 			}
+			if m, ok := agentic.NormalizeMode(md["task_mode"]); ok {
+				o.Mode = m
+			}
 			n.Apply(o, "metadata")
 		}
 		n.Apply(agentic.ParseOverride(h.Override), "header")
+		if m, ok := agentic.NormalizeMode(h.Mode); ok {
+			n.Mode = m
+		}
 	}
 	if _, suffix, ok := agentic.SplitAlias(selector, r.task.spec.AliasNames()); ok {
 		n.Apply(agentic.ParseOverride(suffix), "model")
+	}
+	if n.Mode == "" {
+		n.Mode = r.TaskMode()
 	}
 	return n
 }

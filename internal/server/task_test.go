@@ -14,8 +14,14 @@ import (
 )
 
 // newTaskTestServer serves the router (3-entry task catalog over one fake
-// upstream that echoes the requested model) and returns its base URL.
+// upstream that echoes the requested model), pinned to Jako Tako, and
+// returns its base URL. newTaskTestServerMode keeps any mode ("" = default).
 func newTaskTestServer(t *testing.T) string {
+	t.Helper()
+	return newTaskTestServerMode(t, "jako-tako")
+}
+
+func newTaskTestServerMode(t *testing.T, mode string) string {
 	t.Helper()
 	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var q struct {
@@ -38,7 +44,7 @@ func newTaskTestServer(t *testing.T) string {
 		Providers: []config.Provider{{Name: "fake", Impl: "openailike", BaseURL: up.URL, Kind: "keyless"}},
 		Routes:    map[string][]string{"auto": {"fake/mid"}},
 		Policies:  config.PolicyConfig{CooldownShortSec: 1, CooldownLongSec: 1, MaxChainAttempts: 8},
-		Agentic: agentic.Spec{Catalog: []agentic.Entry{
+		Agentic: agentic.Spec{Mode: mode, Catalog: []agentic.Entry{
 			{ID: "tiny", Model: "fake/tiny", Tier: 1, Speed: 3},
 			{ID: "mid", Model: "fake/mid", Tier: 3, Speed: 2},
 			{ID: "big", Model: "fake/big", Tier: 5, Speed: 1},
@@ -159,5 +165,59 @@ func TestModelsListTaskAliases(t *testing.T) {
 	b, _ := io.ReadAll(r.Body)
 	if !strings.Contains(string(b), `"id":"agent"`) || !strings.Contains(string(b), "freellm-router/agentic") {
 		t.Fatalf("models: %s", b)
+	}
+}
+
+func TestNonStreamBodyIsPlainJSON(t *testing.T) {
+	base := newTaskTestServer(t)
+	resp, out := post(t, base+"/v1/chat/completions", `{"model":"auto","messages":[{"role":"user","content":"hi"}]}`, nil)
+	if resp.StatusCode != 200 || strings.HasPrefix(out, "data:") || strings.Contains(resp.Header.Get("Content-Type"), "event-stream") {
+		t.Fatalf("non-stream response leaked SSE: %s %q", resp.Header.Get("Content-Type"), out)
+	}
+	var v map[string]any
+	if err := json.Unmarshal([]byte(out), &v); err != nil {
+		t.Fatalf("not JSON: %v: %q", err, out)
+	}
+}
+
+func TestDefaultModeAndRuntimeSwitch(t *testing.T) {
+	base := newTaskTestServerMode(t, "")
+	hi := `{"model":"agent","messages":[{"role":"user","content":"hi"}]}`
+
+	resp, _ := post(t, base+"/v1/chat/completions", hi, nil)
+	if resp.Header.Get("X-Freellm-Routed-Via") != "fake/big" || !strings.Contains(resp.Header.Get("X-Freellm-Task"), "mode=rozklad-jazdy") {
+		t.Fatalf("default must be [Rozkład Jazdy]: %v", resp.Header)
+	}
+	// Per request via header.
+	resp, _ = post(t, base+"/v1/chat/completions", hi, map[string]string{"X-Freellm-Task-Mode": "Jako Tako"})
+	if resp.Header.Get("X-Freellm-Routed-Via") != "fake/tiny" {
+		t.Fatalf("X-Freellm-Task-Mode ignored: %v", resp.Header)
+	}
+	// Runtime switch.
+	req, _ := http.NewRequest(http.MethodPut, base+"/v1/route/mode", strings.NewReader(`{"mode":"jako tako"}`))
+	r, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(r.Body)
+	r.Body.Close()
+	if r.StatusCode != 200 || !strings.Contains(string(b), `"mode":"jako-tako"`) {
+		t.Fatalf("PUT /v1/route/mode: %d %s", r.StatusCode, b)
+	}
+	resp, _ = post(t, base+"/v1/chat/completions", hi, nil)
+	if resp.Header.Get("X-Freellm-Routed-Via") != "fake/tiny" {
+		t.Fatalf("runtime switch ignored: %v", resp.Header)
+	}
+	if resp, out := post(t, base+"/v1/route/mode", `{"mode":"turbo"}`, nil); resp.StatusCode != 400 {
+		t.Fatalf("unknown mode: %d %s", resp.StatusCode, out)
+	}
+	g, err := http.Get(base + "/v1/route/mode")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gb, _ := io.ReadAll(g.Body)
+	g.Body.Close()
+	if !strings.Contains(string(gb), `"mode":"jako-tako"`) || !strings.Contains(string(gb), "[Rozkład Jazdy]") {
+		t.Fatalf("GET /v1/route/mode: %s", gb)
 	}
 }

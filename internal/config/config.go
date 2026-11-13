@@ -164,6 +164,9 @@ func Load(explicitPath string) (*Config, error) {
 
 	// Layer 3: env overlay
 	base = applyEnv(base)
+	if v := os.Getenv("FREELLM_TASK_MODE"); v != "" {
+		base.Agentic.Mode = v
+	}
 
 	// Expand ${VAR} and ${VAR:-default} in all string fields
 	base = expandConfig(base)

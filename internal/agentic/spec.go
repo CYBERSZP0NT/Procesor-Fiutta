@@ -24,6 +24,10 @@ import (
 type Spec struct {
 	// Enabled turns the task router on (default true).
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	// Mode is the default mode: "rozklad-jazdy" ([Rozkład Jazdy], all in —
+	// the default) or "jako-tako" (Jako Tako, just enough). Any spelling
+	// NormalizeMode accepts works.
+	Mode string `yaml:"mode,omitempty" json:"mode,omitempty"`
 	// Aliases are the model names that trigger task routing (default
 	// "agent", "task"). "agent:code:4" style suffixes force role/complexity.
 	Aliases []string `yaml:"aliases,omitempty" json:"aliases,omitempty"`
@@ -141,6 +145,9 @@ func (s Spec) Merge(o Spec) Spec {
 	if o.Enabled != nil {
 		out.Enabled = o.Enabled
 	}
+	if o.Mode != "" {
+		out.Mode = o.Mode
+	}
 	if len(o.Aliases) > 0 {
 		out.Aliases = o.Aliases
 	}
@@ -214,6 +221,9 @@ func (s Spec) MaxEscalations() int {
 // catalog entries whose provider is not configured.
 func (s Spec) Validate(knownProviders map[string]bool) []string {
 	var probs []string
+	if _, ok := NormalizeMode(s.Mode); s.Mode != "" && !ok {
+		probs = append(probs, "agentic.mode: unknown mode "+s.Mode+" (rozklad-jazdy | jako-tako)")
+	}
 	ids := map[string]bool{}
 	for i, e := range s.Catalog {
 		where := fmt.Sprintf("agentic.catalog[%d] %q", i, e.ID)
