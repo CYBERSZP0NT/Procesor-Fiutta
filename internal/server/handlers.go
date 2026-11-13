@@ -129,6 +129,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		err       string
 	}
 	probes := make(map[string]probe, len(s.cfg.Providers))
+	var probeMu sync.Mutex // probe goroutines write the shared map concurrently
 
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
@@ -145,27 +146,37 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 			// Lightest sensible liveness probe for OpenAI-like upstreams.
 			u, err := url.JoinPath(base, "/models")
 			if err != nil {
+				probeMu.Lock()
 				probes[name] = probe{err: err.Error()}
+				probeMu.Unlock()
 				return
 			}
 			pr, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 			if err != nil {
+				probeMu.Lock()
 				probes[name] = probe{err: err.Error()}
+				probeMu.Unlock()
 				return
 			}
 			start := time.Now()
 			resp, err := http.DefaultClient.Do(pr)
 			if err != nil {
+				probeMu.Lock()
 				probes[name] = probe{latencyMs: time.Since(start).Milliseconds(), err: err.Error()}
+				probeMu.Unlock()
 				return
 			}
 			io.CopyN(io.Discard, resp.Body, 512)
 			resp.Body.Close()
 			if resp.StatusCode >= 400 {
+				probeMu.Lock()
 				probes[name] = probe{latencyMs: time.Since(start).Milliseconds(), err: fmt.Sprintf("HTTP %d", resp.StatusCode)}
+				probeMu.Unlock()
 				return
 			}
+			probeMu.Lock()
 			probes[name] = probe{latencyMs: time.Since(start).Milliseconds()}
+			probeMu.Unlock()
 		}(p.Name, p.BaseURL)
 	}
 	wg.Wait()
