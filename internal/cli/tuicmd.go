@@ -9,8 +9,8 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/tui"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/tui"
 )
 
 var tuiOpts struct {
@@ -42,9 +42,9 @@ changes apply to the server. Otherwise it reads the ledger and routes chat
 in-process (--local forces that).
 
 Examples:
-  freellm-router tui
-  freellm-router tui --tab usage --interval 1s
-  freellm-router --url http://box:8787 tui`,
+  szmelc-router tui
+  szmelc-router tui --tab usage --interval 1s
+  szmelc-router --url http://box:8787 tui`,
 	RunE: runTUI,
 }
 

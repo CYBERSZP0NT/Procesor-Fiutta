@@ -1,5 +1,5 @@
 // Package core defines the domain types, interfaces, and value objects
-// shared across every other package in freellm-router.
+// shared across every other package in szmelc-router.
 //
 // Design rules (see AGENTS.md):
 //

@@ -13,7 +13,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/config"
 )
 
 // ── helpers ─────────────────────────────────────────────────────────────────

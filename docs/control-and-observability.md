@@ -8,18 +8,18 @@ allow). You can plug the router into any script or harness with `exec`,
 `env` and `wrap`.
 
 ```
-freellm-router tui                 # the interactive UI over all of it
-freellm-router usage               # usage & limits, every provider/model
-freellm-router history -f          # every request / call / task, live
-freellm-router ctl profile auto    # ∞  infinite & full auto
-freellm-router ctl profile control # ⛭  120% control
-freellm-router wrap -- <harness>   # run anything against the router as a session
+szmelc-router tui                 # the interactive UI over all of it
+szmelc-router usage               # usage & limits, every provider/model
+szmelc-router history -f          # every request / call / task, live
+szmelc-router ctl profile auto    # ∞  infinite & full auto
+szmelc-router ctl profile control # ⛭  120% control
+szmelc-router wrap -- <harness>   # run anything against the router as a session
 ```
 
 ## The ledger
 
 The ledger is one append-only JSONL file:
-`~/.local/share/freellm/usage.jsonl`, or `$XDG_DATA_HOME/freellm/…`, or
+`~/.local/share/szmelc/usage.jsonl`, or `$XDG_DATA_HOME/szmelc/…`, or
 `ledger.file` in the config. The server and every CLI process (`chat`,
 `exec`, `wrap`, `tui`) append to it. Only the server rotates it (10 MiB × 3
 files by default), so short-lived processes never race on a rename. Lines
@@ -40,7 +40,7 @@ prints them together.
 
 ```yaml
 ledger:
-  file: /var/log/freellm/ledger.jsonl   # default: ~/.local/share/freellm/usage.jsonl
+  file: /var/log/freellm/ledger.jsonl   # default: ~/.local/share/szmelc/usage.jsonl
   content: preview    # off | preview (first 200 chars of prompt/answer, default) | full
                       # previews are stored on disk — use "off" for sensitive work
   max_bytes: 10485760 # server rotation
@@ -51,10 +51,10 @@ ledger:
 ## Usage & limits
 
 ```
-freellm-router usage            # providers you used, limited or blocked
-freellm-router usage --all --models
-freellm-router usage --watch 2s
-freellm-router limits --json
+szmelc-router usage            # providers you used, limited or blocked
+szmelc-router usage --all --models
+szmelc-router usage --watch 2s
+szmelc-router limits --json
 ```
 
 Every number says where it came from:
@@ -87,15 +87,15 @@ Status values: `ok`, `cooldown`, `limit`, `disabled`, `unavailable`, `no key`.
 ## History
 
 ```
-freellm-router history                          # last 50 events
-freellm-router log -f                           # follow live
-freellm-router history --since 2h --errors
-freellm-router history -k request,attempt --provider groq -n 0
-freellm-router history --session build-42 --grep timeout
-freellm-router history show 3f9a                # a request + its attempts
-freellm-router history sessions                 # per-session totals
-freellm-router history export --format csv -o all.csv   # jsonl | json | csv
-freellm-router --json history --since today     # JSONL for jq
+szmelc-router history                          # last 50 events
+szmelc-router log -f                           # follow live
+szmelc-router history --since 2h --errors
+szmelc-router history -k request,attempt --provider groq -n 0
+szmelc-router history --session build-42 --grep timeout
+szmelc-router history show 3f9a                # a request + its attempts
+szmelc-router history sessions                 # per-session totals
+szmelc-router history export --format csv -o all.csv   # jsonl | json | csv
+szmelc-router --json history --since today     # JSONL for jq
 ```
 
 `--since` and `--until` accept `30m`, `2h`, `7d`, `today`, `yesterday`,
@@ -151,17 +151,17 @@ soonest cooldown, clamped to 1–60 s per round.
 ### Changing it
 
 ```
-freellm-router ctl                       # status (live server, else config)
-freellm-router ctl profile auto          # live on the running server
-freellm-router ctl profile control --save   # …and persisted to the config
-freellm-router ctl --local forever on    # config only
-freellm-router ctl pause | resume
-freellm-router ctl disable groq mistral | enable groq | enable all
-freellm-router ctl allow ollama | allow --clear
-freellm-router ctl fallback off | forever on | limits on   # or "default"
-freellm-router ctl max-attempts 3 | max-wait 10m | escalate free | escalate none
-freellm-router ctl hook pre ./guard.sh | hook pre --clear   # config file only; restart to apply
-freellm-router ctl cooldowns | cooldowns clear [provider/model]
+szmelc-router ctl                       # status (live server, else config)
+szmelc-router ctl profile auto          # live on the running server
+szmelc-router ctl profile control --save   # …and persisted to the config
+szmelc-router ctl --local forever on    # config only
+szmelc-router ctl pause | resume
+szmelc-router ctl disable groq mistral | enable groq | enable all
+szmelc-router ctl allow ollama | allow --clear
+szmelc-router ctl fallback off | forever on | limits on   # or "default"
+szmelc-router ctl max-attempts 3 | max-wait 10m | escalate free | escalate none
+szmelc-router ctl hook pre ./guard.sh | hook pre --clear   # config file only; restart to apply
+szmelc-router ctl cooldowns | cooldowns clear [provider/model]
 ```
 
 The same is available over HTTP. `GET /v1/control` returns the settings and
@@ -223,11 +223,11 @@ background.
 ### Scripts: `exec` (aliases `ask`, `run`)
 
 ```bash
-answer=$(freellm-router exec -q "one word: capital of France") || exit $?
-git diff | freellm-router ask -m code "review this diff"
-freellm-router exec -f spec.md -f main.go "find the bug" --json | jq -r .text
-freellm-router exec --profile auto --deadline 1h "…"        # never give up within 1h
-freellm-router exec --profile control -m groq/llama-3.3-70b-versatile "…"
+answer=$(szmelc-router exec -q "one word: capital of France") || exit $?
+git diff | szmelc-router ask -m code "review this diff"
+szmelc-router exec -f spec.md -f main.go "find the bug" --json | jq -r .text
+szmelc-router exec --profile auto --deadline 1h "…"        # never give up within 1h
+szmelc-router exec --profile control -m groq/llama-3.3-70b-versatile "…"
 ```
 
 `exec` reads piped stdin as context. If a harness keeps a stdin pipe open
@@ -242,16 +242,16 @@ forever mode gave up) · `3` vetoed (paused, or a hook refused).
 ### Any OpenAI-compatible tool: `env`
 
 ```bash
-eval "$(freellm-router env --session nightly)"   # OPENAI_BASE_URL, OPENAI_API_BASE, OPENAI_API_KEY, FREELLM_URL, FREELLM_SESSION
-freellm-router env --shell fish | source
-freellm-router env --shell dotenv >> .env         # also: powershell, json
+eval "$(szmelc-router env --session nightly)"   # OPENAI_BASE_URL, OPENAI_API_BASE, OPENAI_API_KEY, FREELLM_URL, FREELLM_SESSION
+szmelc-router env --shell fish | source
+szmelc-router env --shell dotenv >> .env         # also: powershell, json
 ```
 
 ### Harnesses / agents: `wrap`
 
 ```bash
-freellm-router wrap --session refactor-42 --profile auto -- aider
-freellm-router wrap --profile control -- ./my-harness.sh --task x
+szmelc-router wrap --session refactor-42 --profile auto -- aider
+szmelc-router wrap --profile control -- ./my-harness.sh --task x
 ```
 
 `wrap` uses the running server, or starts a private server on a free
@@ -266,7 +266,7 @@ server. On a shared server, use `ctl` or headers.
 | endpoint | |
 |---|---|
 | `GET /v1/ping` | cheap liveness: pid, uptime, in-flight, ledger path, profile |
-| `GET /v1/usage` | the usage & limits report (JSON of `freellm-router usage`) |
+| `GET /v1/usage` | the usage & limits report (JSON of `szmelc-router usage`) |
 | `GET /v1/history?since=&until=&kind=&session=&provider=&id=&source=&errors=1&q=&limit=` | ledger events (`limit` defaults to 200). Loopback-only without auth |
 | `GET /v1/history?follow=1&…` | backlog, then live events as Server-Sent Events |
 | `GET /v1/sessions[?limit=]` | per-session summaries |
@@ -281,7 +281,7 @@ server. On a shared server, use `ctl` or headers.
 
 ## The TUI
 
-`freellm-router tui` (aliases `ui`, `top`) has six tabs:
+`szmelc-router tui` (aliases `ui`, `top`) has six tabs:
 
 1. **Dashboard**: totals, a requests-per-minute sparkline, top providers and
    recent failures.

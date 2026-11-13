@@ -1,4 +1,4 @@
-// Package tui is the interactive terminal UI (`freellm-router tui`):
+// Package tui is the interactive terminal UI (`szmelc-router tui`):
 // dashboard, usage & limits, full history, sessions, chat and the control
 // plane, live against a running server or locally against the ledger.
 package tui
@@ -14,13 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/control"
-	"github.com/silverx/freellm-router/internal/core"
-	"github.com/silverx/freellm-router/internal/ledger"
-	"github.com/silverx/freellm-router/internal/obs"
-	"github.com/silverx/freellm-router/internal/usage"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/control"
+	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/obs"
+	"github.com/silverx/szmelc-router/internal/usage"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 // ControlState is the control tab's data.

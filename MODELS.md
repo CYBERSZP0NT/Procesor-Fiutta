@@ -3,7 +3,7 @@
 > **DEPRECATED (v1.0.0-rc1):** this file is frozen as a historical
 > reference. Model + free-tier data now lives in `defaults/providers.yaml`
 > (embedded, machine-readable) and is exposed live via
-> `freellm-router models --tier`, `freellm-router notes`, and
+> `szmelc-router models --tier`, `szmelc-router notes`, and
 > `GET /v1/notes` + `GET /v1/models`. New models come from the catalog
 > feeds + live provider `/models` — the static list below will go stale.
 >

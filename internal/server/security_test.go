@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/config"
 )
 
 func newBareServer(t *testing.T, auth config.AuthConfig) *Server {

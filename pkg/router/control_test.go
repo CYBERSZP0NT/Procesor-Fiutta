@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/control"
-	"github.com/silverx/freellm-router/internal/core"
-	"github.com/silverx/freellm-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/control"
+	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/ledger"
 )
 
 // flaky answers 429 for the first `fail` calls, then succeeds.

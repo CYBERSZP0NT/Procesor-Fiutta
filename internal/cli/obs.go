@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/core"
-	"github.com/silverx/freellm-router/internal/ledger"
-	"github.com/silverx/freellm-router/internal/obs"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/obs"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 // pURL is the --url persistent flag (running server to talk to).
@@ -65,7 +65,7 @@ func serverURL(cfg *config.Config) string {
 	return u
 }
 
-// apiClient talks to a running freellm-router server.
+// apiClient talks to a running szmelc-router server.
 type apiClient struct {
 	base string
 	key  string

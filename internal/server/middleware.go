@@ -1,5 +1,5 @@
 // Package server implements the OpenAI-compatible HTTP server for
-// freellm-router (STEP 4): chat completions (streaming + non-streaming,
+// szmelc-router (STEP 4): chat completions (streaming + non-streaming,
 // exact OpenAI shapes), models, health, notes, metrics — and the
 // plugin-shaped, config-controlled middleware pipeline.
 package server
@@ -9,14 +9,14 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
-	"github.com/silverx/freellm-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/ledger"
 	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/config"
 )
 
 // Middleware wraps an http.Handler. The pipeline is an ordered list;

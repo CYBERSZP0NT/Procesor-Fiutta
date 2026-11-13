@@ -14,7 +14,7 @@
 // The default ("" / "balanced") is the router's classic behaviour. Every
 // knob can also be set on its own; explicit settings beat the profile
 // preset. Settings live in the config (control:), can be changed live on a
-// running server (PUT /v1/control, `freellm-router ctl`), and per request
+// running server (PUT /v1/control, `szmelc-router ctl`), and per request
 // (X-Freellm-Profile / -Fallback / -Forever / -Max-Attempts headers).
 package control
 

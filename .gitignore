@@ -16,8 +16,9 @@ Thumbs.db
 .vscode/
 
 # Go
-# Anchored: a bare "freellm-router" also matched cmd/freellm-router/ and
+# Anchored: a bare "szmelc-router" also matched cmd/szmelc-router/ and
 # kept main.go out of the repo.
+/szmelc-router
 /freellm-router
 dist/
 *.exe

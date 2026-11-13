@@ -3,14 +3,16 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/appdir"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 var providersCmd = &cobra.Command{
@@ -24,10 +26,10 @@ var providersCmd = &cobra.Command{
   test    – test a single provider's connectivity
 
 Examples:
-  freellm-router providers list
-  freellm-router providers add --name myprovider --base-url https://api.example.com/v1 --kind keyless
-  freellm-router providers remove myprovider
-  freellm-router providers test groq`,
+  szmelc-router providers list
+  szmelc-router providers add --name myprovider --base-url https://api.example.com/v1 --kind keyless
+  szmelc-router providers remove myprovider
+  szmelc-router providers test groq`,
 }
 
 // ── providers list ─────────────────────────────────────────────────────
@@ -100,8 +102,8 @@ The provider is appended to the config file under providers:.
 If a provider with the same name exists, it will be updated in place.
 
 Examples:
-  freellm-router providers add --name deepseek --base-url https://api.deepseek.com/v1 --kind keyed --key-env DEEPSEEK_API_KEY
-  freellm-router providers add --name ollama --base-url http://localhost:11434/v1 --kind local --impl ollama`,
+  szmelc-router providers add --name deepseek --base-url https://api.deepseek.com/v1 --kind keyed --key-env DEEPSEEK_API_KEY
+  szmelc-router providers add --name ollama --base-url http://localhost:11434/v1 --kind local --impl ollama`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if addOptsVar.name == "" {
 			return fmt.Errorf("--name is required")
@@ -112,7 +114,7 @@ Examples:
 
 		cfgPath := configFile()
 		if cfgPath == "" {
-			cfgPath = "$HOME/.config/freellm/config.yaml"
+			cfgPath = "$HOME/.config/szmelc/config.yaml"
 		}
 
 		cfg, err := config.Load("")
@@ -180,7 +182,7 @@ var providersRemoveCmd = &cobra.Command{
 
 		cfgPath := configFile()
 		if cfgPath == "" {
-			cfgPath = "$HOME/.config/freellm/config.yaml"
+			cfgPath = "$HOME/.config/szmelc/config.yaml"
 		}
 
 		cfg, err := config.Load("")
@@ -284,7 +286,7 @@ func configFile() string {
 	}
 	home, _ := os.UserHomeDir()
 	if home != "" {
-		candidate := home + "/.config/freellm/config.yaml"
+		candidate := appdir.File(filepath.Join(home, ".config"), "config.yaml")
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate
 		}

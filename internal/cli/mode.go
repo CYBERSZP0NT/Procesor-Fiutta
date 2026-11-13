@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/agentic"
-	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/agentic"
+	"github.com/silverx/szmelc-router/internal/config"
 )
 
 var modeCmd = &cobra.Command{
@@ -32,9 +32,9 @@ Per request: model "agent:jako-tako", header X-Freellm-Task-Mode, or
 metadata.task_mode. Env: FREELLM_TASK_MODE overrides the config.
 
 Examples:
-  freellm-router mode
-  freellm-router mode jako-tako
-  freellm-router mode "[Rozkład Jazdy]"`,
+  szmelc-router mode
+  szmelc-router mode jako-tako
+  szmelc-router mode "[Rozkład Jazdy]"`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 1 {
@@ -69,7 +69,7 @@ Examples:
 			}
 			fmt.Printf("%s %-16s %-14s %s\n", mark, m.Name, m.ID, m.Summary)
 		}
-		fmt.Printf("\nchange: freellm-router mode %s\n", strings.Join(otherModes(current), " | "))
+		fmt.Printf("\nchange: szmelc-router mode %s\n", strings.Join(otherModes(current), " | "))
 		return nil
 	},
 }

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/silverx/freellm-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/core"
 )
 
 // DEFAULT_AWESOME_URL is the mnfst/awesome-free-llm-apis daily JSON, served

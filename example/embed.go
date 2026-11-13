@@ -1,4 +1,4 @@
-// Command embed shows how to embed the freellm-router core in your own Go
+// Command embed shows how to embed the szmelc-router core in your own Go
 // service (AGENTS.md STEP 8: < 30 lines): configure providers as plain data,
 // Route() returns the served-by label plus the full text.
 package main
@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 func main() {

@@ -1,8 +1,8 @@
 // Package pluginhost provides a minimal library for building Go plugins
-// that speak the freellm-router JSON-RPC 2.0 over stdio protocol.
+// that speak the szmelc-router JSON-RPC 2.0 over stdio protocol.
 //
 // A plugin is a subprocess that reads JSON-RPC messages on stdin and writes
-// responses on stdout. The host (freellm-router) manages the process lifecycle
+// responses on stdout. The host (szmelc-router) manages the process lifecycle
 // (start, handshake, restart on crash, log capture).
 //
 // To build a Go plugin with one import:
@@ -11,7 +11,7 @@
 //
 //	import (
 //	    "log"
-//	    "github.com/silverx/freellm-router/pkg/pluginhost"
+//	    "github.com/silverx/szmelc-router/pkg/pluginhost"
 //	)
 //
 //	func main() {

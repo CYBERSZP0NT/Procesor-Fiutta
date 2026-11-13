@@ -1,4 +1,4 @@
-// Package ledger is the single event log of everything freellm-router does:
+// Package ledger is the single event log of everything szmelc-router does:
 // client requests, every upstream call (attempt), task-router decisions,
 // sessions and operator control changes. It is one append-only JSONL file
 // (the usage journal, rotated by the server) that every process — server,
@@ -18,7 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/appdir"
+	"github.com/silverx/szmelc-router/internal/core"
 )
 
 // Event kinds.
@@ -133,17 +134,17 @@ func NewID() string {
 }
 
 // DefaultPath is where the ledger lives unless configured otherwise:
-// $XDG_DATA_HOME/freellm/usage.jsonl (~/.local/share/freellm/usage.jsonl).
+// $XDG_DATA_HOME/szmelc/usage.jsonl (~/.local/share/szmelc/usage.jsonl).
 // The server, the CLI and `stats` all use this one helper.
 func DefaultPath() string {
 	if dir := os.Getenv("XDG_DATA_HOME"); dir != "" {
-		return filepath.Join(dir, "freellm", "usage.jsonl")
+		return appdir.File(dir, "usage.jsonl")
 	}
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
-		return filepath.Join(".local", "share", "freellm", "usage.jsonl")
+		return appdir.File(filepath.Join(".local", "share"), "usage.jsonl")
 	}
-	return filepath.Join(home, ".local", "share", "freellm", "usage.jsonl")
+	return appdir.File(filepath.Join(home, ".local", "share"), "usage.jsonl")
 }
 
 // Clip shortens s to n runes (adding "…") for previews.

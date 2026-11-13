@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 type probeOpts struct {
@@ -32,10 +32,10 @@ Filters: --provider to test a single provider, --model to test a
 specific chain member.
 
 Examples:
-  freellm-router probe
-  freellm-router probe --provider groq
-  freellm-router probe --concurrency 4 --timeout 10
-  freellm-router probe --json`,
+  szmelc-router probe
+  szmelc-router probe --provider groq
+  szmelc-router probe --concurrency 4 --timeout 10
+  szmelc-router probe --json`,
 	RunE: runProbe,
 }
 

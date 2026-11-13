@@ -7,9 +7,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/silverx/freellm-router/defaults"
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/core"
+	"github.com/silverx/szmelc-router/defaults"
+	"github.com/silverx/szmelc-router/internal/appdir"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/core"
 	"gopkg.in/yaml.v3"
 )
 
@@ -122,17 +123,17 @@ func DefaultCacheFile() string {
 		return v
 	}
 	if dir, err := os.UserCacheDir(); err == nil && dir != "" {
-		return filepath.Join(dir, "freellm", "catalog.json")
+		return appdir.File(dir, "catalog.json")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".cache", "freellm", "catalog.json")
+	return appdir.File(filepath.Join(home, ".cache"), "catalog.json")
 }
 
 // Assemble builds the full core.Catalog from config.Catalog:
 //
 //	sources:  "providers" (active config) | "embedded" | any registry name
 //	ttl:      catalog.refresh_s (default 3600s)
-//	cache:    catalog.cache_file (default ~/.cache/freellm/catalog.json)
+//	cache:    catalog.cache_file (default ~/.cache/szmelc/catalog.json)
 //
 // Unknown source names are skipped (tolerant of absence — a typo in config
 // must never take the router down).

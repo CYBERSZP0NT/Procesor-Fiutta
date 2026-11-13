@@ -1,4 +1,4 @@
-# freellm-router
+# szmelc-router
 
 [![CI](https://github.com/CYBERSZP0NT/Procesor-Fiutta/actions/workflows/ci.yml/badge.svg)](https://github.com/CYBERSZP0NT/Procesor-Fiutta/actions/workflows/ci.yml)
 ![Go](https://img.shields.io/github/go-mod/go-version/CYBERSZP0NT/Procesor-Fiutta)
@@ -18,6 +18,11 @@ Open WebUI, LibreChat, scripts) at it.
 
 - `freellm_router.py` is the **legacy reference implementation** (kept for
   behavior comparison). The Go binary is the product.
+- Formerly **freellm-router**. The old name still works: `make install` and
+  the Docker image add a `freellm-router` symlink, and an existing
+  `~/.config/freellm/` (or `~/.local/share/freellm/`, `~/.cache/freellm/`)
+  is used until a `szmelc/` one exists. `FREELLM_*` env vars and
+  `X-Freellm-*` headers are unchanged.
 - Adding a new source is **a config line or a small plugin** — never a
   code change to the core. Two supported paths, ~minutes each:
   [docs/adding-a-source.md](docs/adding-a-source.md).
@@ -34,16 +39,16 @@ make install                                   # go install
 cp .env.example .env                           # fill in the ones you have
 
 # 3) point it at a fake/local provider first
-freellm-router config init                     # writes ~/.config/freellm/config.yaml
-freellm-router config validate                 # ✓ Config OK (43 providers, 35 routes)
+szmelc-router config init                     # writes ~/.config/szmelc/config.yaml
+szmelc-router config validate                 # ✓ Config OK (43 providers, 35 routes)
 
 # 4) talk to it — CLI
-freellm-router chat "hi" --model free          # streams the first working provider
-freellm-router models --tier                   # route aliases + free-tier notes
-freellm-router probe --provider pollinations   # 'pong' ping, latency, preview
+szmelc-router chat "hi" --model free          # streams the first working provider
+szmelc-router models --tier                   # route aliases + free-tier notes
+szmelc-router probe --provider pollinations   # 'pong' ping, latency, preview
 
 # 5) or run the OpenAI-compatible server
-freellm-router serve --port 8787
+szmelc-router serve --port 8787
 ```
 
 ```bash
@@ -92,12 +97,12 @@ model **per request**. There are two modes:
 
 In Jako Tako, a tiny model says hi, a 70B writes the mail, and the strongest
 model you have is kept for the hard refactor. Switch the mode with
-`freellm-router mode jako-tako`, `PUT /v1/route/mode`, `FREELLM_TASK_MODE`, or
+`szmelc-router mode jako-tako`, `PUT /v1/route/mode`, `FREELLM_TASK_MODE`, or
 per request with `agent:jako-tako`. Empty or filtered non-stream answers are
 retried one tier up. Every pick explains itself:
 
 ```bash
-freellm-router route "refactor this Go service for concurrency" --all   # preview + why each model lost
+szmelc-router route "refactor this Go service for concurrency" --all   # preview + why each model lost
 curl -si localhost:8787/v1/chat/completions -d '{"model":"agent","messages":[{"role":"user","content":"hi"}]}' | grep -i x-freellm-task
 curl -s localhost:8787/v1/route -d '{"model":"agent:code:4","messages":[{"role":"user","content":"x"}]}'
 ```
@@ -116,18 +121,18 @@ interactive TUI, or over HTTP. Full guide:
 [docs/control-and-observability.md](docs/control-and-observability.md).
 
 ```bash
-freellm-router tui                       # interactive: dashboard · usage · history · sessions · chat · control
-freellm-router usage --models            # usage & limits across all providers/models (live or from the ledger)
-freellm-router history -f                # full log: requests, attempts, tasks, sessions — live
-freellm-router history sessions          # per-session totals; history show <id> for one request
+szmelc-router tui                       # interactive: dashboard · usage · history · sessions · chat · control
+szmelc-router usage --models            # usage & limits across all providers/models (live or from the ledger)
+szmelc-router history -f                # full log: requests, attempts, tasks, sessions — live
+szmelc-router history sessions          # per-session totals; history show <id> for one request
 
-freellm-router ctl profile auto          # ∞ infinite & full auto: fallback, wait out cooldowns, retry until answered
-freellm-router ctl profile control       # ⛭ 120% control: no fallback, no silent retries, budgets, veto hooks
-freellm-router ctl disable groq · pause · forever on · max-wait 10m · hook pre ./guard.sh · cooldowns clear
+szmelc-router ctl profile auto          # ∞ infinite & full auto: fallback, wait out cooldowns, retry until answered
+szmelc-router ctl profile control       # ⛭ 120% control: no fallback, no silent retries, budgets, veto hooks
+szmelc-router ctl disable groq · pause · forever on · max-wait 10m · hook pre ./guard.sh · cooldowns clear
 
-git diff | freellm-router exec -m code "review this"   # scripts: stdin in, answer out, exit 0/1/2/3
-eval "$(freellm-router env --session nightly)"          # any OpenAI-compatible tool → the router
-freellm-router wrap --profile auto -- python agent.py   # any harness, tracked as one session
+git diff | szmelc-router exec -m code "review this"   # scripts: stdin in, answer out, exit 0/1/2/3
+eval "$(szmelc-router env --session nightly)"          # any OpenAI-compatible tool → the router
+szmelc-router wrap --profile auto -- python agent.py   # any harness, tracked as one session
 ```
 
 Declare the quotas you know (they are never guessed), and the router
@@ -153,7 +158,7 @@ curl -s http://localhost:8787/v1/chat/completions \
 | Shape | What |
 |---|---|
 | **CLI** | `chat`, `exec`/`ask`, `route`, `models`, `probe`, `providers (list/add/remove/test)`, `notes`, `usage`/`limits`, `history`/`log` (`sessions`, `show`, `export`), `stats`, `ctl`, `env`, `wrap`, `tui`, `mode`, `config (path/show/validate/init)`, `serve` |
-| **TUI** | `freellm-router tui` — dashboard, usage & limits, history, sessions, chat, control plane (live or local) |
+| **TUI** | `szmelc-router tui` — dashboard, usage & limits, history, sessions, chat, control plane (live or local) |
 | **Server** | `POST /v1/chat/completions`, `GET /v1/models`, `GET /v1/health`, `GET /v1/notes`, `GET /v1/metrics` (Prometheus text format), `GET|POST /v1/route` (task router), `GET /v1/usage`, `GET /v1/history` (`?follow=1` SSE), `GET /v1/sessions`, `GET|PUT|PATCH /v1/control`, `DELETE /v1/cooldowns`, `GET /v1/ping`, session base URL `/s/<id>/v1` — plus middleware: logging → CORS → auth (bearer, constant-time) → rate-limit → usage journal → panic-recover |
 | **Go library** | `pkg/router` — embed the whole fallback engine in your Go service in < 30 lines; reference: [`example/embed.go`](example/embed.go) |
 | **Any-language plugins** | `impl: plugin` — any subprocess speaking stdio JSON-RPC (spec: [docs/plugin-protocol.md](docs/plugin-protocol.md)); references in `plugins/python-example` and `plugins/go-example` |
@@ -161,7 +166,7 @@ curl -s http://localhost:8787/v1/chat/completions \
 
 ## Config
 
-Three layers: embedded defaults → `~/.config/freellm/config.yaml` (or
+Three layers: embedded defaults → `~/.config/szmelc/config.yaml` (or
 `$FREELLM_CONFIG`) → env + `.env`, with `${VAR:-default}` expansion. Full
 reference: [docs/config-reference.md](docs/config-reference.md).
 
@@ -177,7 +182,7 @@ server: {host: 0.0.0.0, port: 8787, auth: {mode: none}}
 ```
 
 Free-tier notes for every source live in `defaults/providers.yaml`
-(machine-readable data, not prose) and are exposed via `freellm-router
+(machine-readable data, not prose) and are exposed via `szmelc-router
 notes`, `models --tier`, and `GET /v1/notes`.
 
 ## Docs
@@ -196,7 +201,7 @@ notes`, `models --tier`, and `GET /v1/notes`.
 ## Dev
 
 ```bash
-make build      # → ./freellm-router
+make build      # → ./szmelc-router
 make test       # go test -race ./...
 make lint       # go vet (+ golangci-lint if present)
 make release    # cross-compile static binaries → dist/ (+ SHA256SUMS)

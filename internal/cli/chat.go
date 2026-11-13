@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 type chatOpts struct {
@@ -29,15 +29,15 @@ var chatOptsVar = &chatOpts{}
 var chatCmd = &cobra.Command{
 	Use:   `chat "prompt"`,
 	Short: "Send a chat prompt to the LLM chain (streaming by default)",
-	Long: `Send a prompt through the freellm-router fallback chain and stream
+	Long: `Send a prompt through the szmelc-router fallback chain and stream
 the response to stdout. Uses the global --model flag to select a route
 alias (e.g. "auto", "free", "smart") or a specific "provider/model".
 
 Examples:
-  freellm-router chat "Hello!" --model free
-  freellm-router chat "Explain Go generics" --system "You are a Go tutor."
-  freellm-router chat "Write a poem" --no-stream --via
-  freellm-router --json chat "hi"`,
+  szmelc-router chat "Hello!" --model free
+  szmelc-router chat "Explain Go generics" --system "You are a Go tutor."
+  szmelc-router chat "Write a poem" --no-stream --via
+  szmelc-router --json chat "hi"`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runChat,
 }

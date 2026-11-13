@@ -1,6 +1,6 @@
 # Adding a new source — the two supported paths
 
-Adding a model/inference source to freellm-router is **never a core code
+Adding a model/inference source to szmelc-router is **never a core code
 change**. You have exactly two paths.
 
 ## Path A — it (or a sidecar of it) is OpenAI-compatible → 3 lines of config
@@ -9,7 +9,7 @@ Most free tiers (Groq, Google, Cerebras, Together, OpenRouter, DeepSeek, …)
 speak OpenAI's `/chat/completions` + `/models`. That's all the router needs:
 
 ```yaml
-# ~/.config/freellm/config.yaml (or append in your FREELLM_CONFIG file)
+# ~/.config/szmelc/config.yaml (or append in your FREELLM_CONFIG file)
 providers:
   - name: mynewsource          # the "provider" label in chains / via
     impl: openailike           # dispatch to the OpenAI-compatible adapter
@@ -25,15 +25,15 @@ Then:
 
 ```bash
 export MYNEW_API_KEY=…
-freellm-router config validate          # catches bad fields fast
-freellm-router providers test mynewsource
-freellm-router chat "hi" --model mynewsource/some-model
+szmelc-router config validate          # catches bad fields fast
+szmelc-router providers test mynewsource
+szmelc-router chat "hi" --model mynewsource/some-model
 ```
 
 Or the same thing as a one-liner CLI:
 
 ```bash
-freellm-router providers add \
+szmelc-router providers add \
   --name mynewsource --impl openailike --kind keyed \
   --base-url https://api.example.com/v1 --key-env MYNEW_API_KEY
 ```

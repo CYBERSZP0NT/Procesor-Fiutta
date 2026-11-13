@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/journal"
-	"github.com/silverx/freellm-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/journal"
+	"github.com/silverx/szmelc-router/internal/ledger"
 )
 
 var statsOptsVar struct {
@@ -26,13 +26,13 @@ var statsCmd = &cobra.Command{
 request: time, route, via, tokens, latency, status).
 
 By default reads the same journal the HTTP server writes
-($XDG_DATA_HOME/freellm/usage.jsonl, or server.usage_file from the config).
+($XDG_DATA_HOME/szmelc/usage.jsonl, or server.usage_file from the config).
 
 Examples:
-  freellm-router stats                    # all-time summary
-  freellm-router stats --date 2025-07-14  # one day
-  freellm-router stats --json             # machine-readable
-  freellm-router stats --file /var/log/freellm/usage.jsonl`,
+  szmelc-router stats                    # all-time summary
+  szmelc-router stats --date 2025-07-14  # one day
+  szmelc-router stats --json             # machine-readable
+  szmelc-router stats --file /var/log/freellm/usage.jsonl`,
 	RunE: runStats,
 }
 
@@ -175,7 +175,7 @@ func printStats(path, day string) error {
 	if day != "" {
 		dateLabel = day
 	}
-	fmt.Printf("freellm-router usage stats (%s, %s)\n", path, dateLabel)
+	fmt.Printf("szmelc-router usage stats (%s, %s)\n", path, dateLabel)
 	fmt.Printf("  total:      %d requests (%d streaming), %d errors (%.1f%%), avg latency %dms\n",
 		s.Total, s.Streaming, s.Errors, pct(s.Errors, s.Total), s.AvgLatencyMS)
 	if len(s.StatusCounts) > 0 {

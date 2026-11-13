@@ -10,8 +10,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/silverx/freellm-router/internal/ledger"
-	"github.com/silverx/freellm-router/internal/usage"
+	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/usage"
 )
 
 var (
@@ -66,7 +66,7 @@ func (m Model) View() string {
 }
 
 func (m Model) viewHeader() string {
-	tabs := []string{sTitle.Render("freellm-router ")}
+	tabs := []string{sTitle.Render("szmelc-router ")}
 	for i, n := range tabNames {
 		label := strconv.Itoa(i+1) + " " + n
 		if tab(i) == m.tab {
@@ -144,7 +144,7 @@ func (m Model) viewFooter() string {
 
 func (m Model) viewHelp() string {
 	return sBox.Render(strings.Join([]string{
-		sTitle.Render("freellm-router TUI"),
+		sTitle.Render("szmelc-router TUI"),
 		"",
 		"1 Dashboard  totals, requests/min sparkline, top providers, recent failures",
 		"2 Usage      usage vs. declared limits, provider-reported quota, cooldowns",
@@ -544,7 +544,7 @@ func (m Model) viewSessions(h int) string {
 		b.WriteString(line + "\n")
 	}
 	if len(m.sessions) == 0 {
-		b.WriteString(sDim.Render("no sessions yet — freellm-router wrap --session NAME -- <cmd>, exec --session, or chat here") + "\n")
+		b.WriteString(sDim.Render("no sessions yet — szmelc-router wrap --session NAME -- <cmd>, exec --session, or chat here") + "\n")
 	}
 	return b.String()
 }

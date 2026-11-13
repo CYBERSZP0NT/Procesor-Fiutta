@@ -1,13 +1,13 @@
 # syntax=docker/dockerfile:1
-# freellm-router — single static binary, distroless runtime, non-root.
+# szmelc-router — single static binary, distroless runtime, non-root.
 #
 # Build (from the repo root):
-#   docker build -t freellm-router:latest -f docker/Dockerfile .
+#   docker build -t szmelc-router:latest -f docker/Dockerfile .
 #
 # Or simply:
 #   docker compose -f docker/docker-compose.yml up --build
 #
-# The image contains only the statically-linked `freellm-router` binary and
+# The image contains only the statically-linked `szmelc-router` binary and
 # the example plugins (used by docker-compose.zerokey.yml). Config is
 # mounted at /config (or pointed to with FREELLM_CONFIG); usage journal is
 # written under /data (mount a volume there to persist it).
@@ -23,11 +23,13 @@ ARG COMMIT=unknown
 ARG DATE=1970-01-01T00:00:00Z
 RUN CGO_ENABLED=0 go build -trimpath \
       -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
-      -o /out/freellm-router ./cmd/freellm-router
+      -o /out/bin/szmelc-router ./cmd/szmelc-router \
+ && ln -s szmelc-router /out/bin/freellm-router  # legacy name, pre-rebrand
 
 # Runtime: distroless/static = no shell, no libc, minimal attack surface.
 FROM gcr.io/distroless/static:nonroot AS runtime
-COPY --from=build /out/freellm-router /usr/local/bin/freellm-router
+# Copying the directory keeps the freellm-router symlink a symlink.
+COPY --from=build /out/bin/ /usr/local/bin/
 # Example plugins (optional; the zero-key compose uses the python one).
 COPY plugins /plugins
 ENV HOME=/data \
@@ -37,6 +39,6 @@ ENV HOME=/data \
 USER nonroot:nonroot
 EXPOSE 8787
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD [ "/usr/local/bin/freellm-router", "config", "validate", "--config", "/config/config.yaml" ]
-ENTRYPOINT [ "freellm-router" ]
+  CMD [ "/usr/local/bin/szmelc-router", "config", "validate", "--config", "/config/config.yaml" ]
+ENTRYPOINT [ "szmelc-router" ]
 CMD [ "serve", "--host", "0.0.0.0", "--port", "8787" ]

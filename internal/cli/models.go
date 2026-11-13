@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/config"
 )
 
 type modelsOpts struct {
@@ -27,10 +27,10 @@ With --json, output is machine-readable JSON.
 With --tier, free-tier notes are shown alongside providers.
 
 Examples:
-  freellm-router models
-  freellm-router models --provider groq
-  freellm-router models --kind keyless
-  freellm-router models --json --tier`,
+  szmelc-router models
+  szmelc-router models --provider groq
+  szmelc-router models --kind keyless
+  szmelc-router models --json --tier`,
 	RunE: runModels,
 }
 

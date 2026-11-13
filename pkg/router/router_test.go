@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 func TestPkgRouterBasic(t *testing.T) {

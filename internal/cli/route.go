@@ -12,8 +12,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 var (
@@ -43,13 +43,13 @@ Force the classification with --role/--complexity, or in a request with
 model "agent:code:4", the X-Freellm-Task header or metadata.task.
 
 Examples:
-  freellm-router route "hi"
-  freellm-router route "refactor this Go service for concurrency" --all
-  echo "summarize: ..." | freellm-router route
-  freellm-router route --role code --complexity 5 --local "x"
-  freellm-router route --mode jako-tako "write a haiku"
-  freellm-router route --catalog
-  freellm-router chat --model agent "explain CRDTs"`,
+  szmelc-router route "hi"
+  szmelc-router route "refactor this Go service for concurrency" --all
+  echo "summarize: ..." | szmelc-router route
+  szmelc-router route --role code --complexity 5 --local "x"
+  szmelc-router route --mode jako-tako "write a haiku"
+  szmelc-router route --catalog
+  szmelc-router chat --model agent "explain CRDTs"`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load(pCfgPath)
 		if err != nil {

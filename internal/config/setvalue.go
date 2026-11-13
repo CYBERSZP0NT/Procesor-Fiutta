@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/silverx/szmelc-router/internal/appdir"
 )
 
 // SetUserValue sets one scalar at keys (e.g. ["agentic", "mode"]) in the
@@ -88,7 +90,7 @@ func setUserNode(path string, keys []string, value *yaml.Node) error {
 }
 
 // UserPath returns the user config file path that Load reads (explicit,
-// else $FREELLM_CONFIG, else ~/.config/freellm/config.yaml), whether or
+// else $FREELLM_CONFIG, else ~/.config/szmelc/config.yaml), whether or
 // not it exists yet.
 func UserPath(explicit string) string {
 	if explicit != "" {
@@ -98,5 +100,5 @@ func UserPath(explicit string) string {
 		return v
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "freellm", "config.yaml")
+	return appdir.File(filepath.Join(home, ".config"), "config.yaml")
 }

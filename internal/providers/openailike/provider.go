@@ -25,8 +25,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/core"
 )
 
 // Provider is one OpenAI-compatible upstream, configured by its config.Provider entry.

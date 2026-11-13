@@ -20,9 +20,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/core"
-	"github.com/silverx/freellm-router/internal/providers/openailike"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/silverx/szmelc-router/internal/providers/openailike"
 )
 
 // Provider wraps an openailike provider with g4f-specific behavior.

@@ -1,4 +1,4 @@
-# freellm-router — standard stack (router + optional sidecars).
+# szmelc-router — standard stack (router + optional sidecars).
 #
 #   docker compose -f docker/docker-compose.yml up --build
 #
@@ -7,14 +7,14 @@
 # run. All of them are optional; the router works fully standalone for any
 # remote provider you put keys for.
 
-name: freellm-router
+name: szmelc-router
 
 services:
   router:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: freellm-router:local
+    image: szmelc-router:local
     ports:
       - "8787:8787"
     environment:

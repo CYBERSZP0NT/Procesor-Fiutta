@@ -13,9 +13,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/freellm-router/internal/config"
-	"github.com/silverx/freellm-router/internal/ledger"
-	"github.com/silverx/freellm-router/internal/usage"
+	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/silverx/szmelc-router/internal/usage"
 )
 
 var usageOpts struct {
@@ -49,10 +49,10 @@ control.enforce_limits / profile auto|control, enforced as a budget):
     openrouter: {rpm: 20, rpd: 50}
 
 Examples:
-  freellm-router usage                 # providers you used or limited
-  freellm-router usage --all --models  # every provider, per-model rows
-  freellm-router usage --watch 2s      # live refresh
-  freellm-router limits --json         # machine-readable`,
+  szmelc-router usage                 # providers you used or limited
+  szmelc-router usage --all --models  # every provider, per-model rows
+  szmelc-router usage --watch 2s      # live refresh
+  szmelc-router limits --json         # machine-readable`,
 	RunE: runUsage,
 }
 
@@ -135,7 +135,7 @@ func printUsage(w io.Writer, rep *usage.Report, all, models bool) {
 	if rep.Live {
 		src = fmt.Sprintf("live server, up %s, %d in flight", humanDur(time.Since(rep.Started).Round(time.Second)), rep.InFlight)
 	}
-	fmt.Fprintf(w, "freellm-router usage & limits — %s\n", src)
+	fmt.Fprintf(w, "szmelc-router usage & limits — %s\n", src)
 	if !rep.Since.IsZero() {
 		fmt.Fprintf(w, "history since %s · ", rep.Since.Local().Format("2006-01-02 15:04"))
 	}

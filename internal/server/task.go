@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/silverx/freellm-router/pkg/router"
+	"github.com/silverx/szmelc-router/pkg/router"
 )
 
 // handleRouteCatalog serves GET /v1/route: the effective task-router spec
@@ -78,7 +78,7 @@ func taskHints(r *http.Request, md map[string]string) *router.TaskHints {
 // handleMode serves GET /v1/route/mode (current mode + the list) and
 // PUT|POST /v1/route/mode {"mode": "jako-tako"} — switches the default mode
 // for every following request until restart (persist it with
-// `freellm-router mode <mode>` or agentic.mode in the config).
+// `szmelc-router mode <mode>` or agentic.mode in the config).
 func (s *Server) handleMode(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		body, err := io.ReadAll(r.Body)
