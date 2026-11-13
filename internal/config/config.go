@@ -19,6 +19,7 @@ import (
 
 	"github.com/silverx/freellm-router/defaults"
 	"github.com/silverx/freellm-router/internal/agentic"
+	"github.com/silverx/freellm-router/internal/control"
 	"gopkg.in/yaml.v3"
 )
 
@@ -38,6 +39,43 @@ type Config struct {
 	ACL       map[string][]string `yaml:"routes_acl,omitempty"` // route → allowed key names/values
 	// Agentic overlays the embedded task-router spec (defaults/agentic.yaml).
 	Agentic agentic.Spec `yaml:"agentic,omitempty"`
+	// Limits declares per-provider quotas by provider name (overrides a
+	// provider entry's own limits). Used by `usage` and, when
+	// control.enforce_limits is on, as a client-side budget.
+	Limits map[string]Limits `yaml:"limits,omitempty"`
+	// Ledger configures the event log (history, usage, sessions).
+	Ledger LedgerConfig `yaml:"ledger,omitempty"`
+	// Control holds the operator settings (profile, fallback, hooks, …).
+	Control control.Settings `yaml:"control,omitempty"`
+}
+
+// Limits is a provider quota as the user declares it. Zero = unknown.
+// The router never ships guessed numbers: free tiers change often, so
+// these come from your config (or the live x-ratelimit-* headers).
+type Limits struct {
+	RPM  int    `yaml:"rpm,omitempty" json:"rpm,omitempty"` // requests per minute
+	RPD  int    `yaml:"rpd,omitempty" json:"rpd,omitempty"` // requests per day (rolling 24h)
+	TPM  int    `yaml:"tpm,omitempty" json:"tpm,omitempty"` // tokens per minute
+	TPD  int    `yaml:"tpd,omitempty" json:"tpd,omitempty"` // tokens per day (rolling 24h)
+	Note string `yaml:"note,omitempty" json:"note,omitempty"`
+}
+
+// IsZero reports whether no limit is declared.
+func (l Limits) IsZero() bool { return l.RPM == 0 && l.RPD == 0 && l.TPM == 0 && l.TPD == 0 }
+
+// LedgerConfig configures the event log.
+type LedgerConfig struct {
+	// File is the ledger path (default $XDG_DATA_HOME/freellm/usage.jsonl;
+	// server.usage_file is honoured for compatibility).
+	File string `yaml:"file,omitempty"`
+	// Disabled turns event logging off everywhere.
+	Disabled bool `yaml:"disabled,omitempty"`
+	// MaxBytes / Keep tune the server's rotation (0 = 10 MiB / 3 files).
+	MaxBytes int64 `yaml:"max_bytes,omitempty"`
+	Keep     int   `yaml:"keep,omitempty"`
+	// Content controls prompt/answer capture: "off" | "preview" (default,
+	// first 200 characters) | "full".
+	Content string `yaml:"content,omitempty"`
 }
 
 // Provider is one routable inference source entry.
@@ -50,6 +88,8 @@ type Provider struct {
 	Weight  int    `yaml:"weight,omitempty"`
 	Header  string `yaml:"header,omitempty"`
 	Notes   string `yaml:"notes,omitempty"`
+	// Limits optionally declares this provider's quota (see Config.Limits).
+	Limits *Limits `yaml:"limits,omitempty"`
 	// External-plugin fields (used when Kind==plugin)
 	Command               []string          `yaml:"command,omitempty"`
 	Env                   map[string]string `yaml:"env,omitempty"`
@@ -364,6 +404,33 @@ func merge(base, overlay *Config) *Config {
 	if len(overlay.ACL) > 0 {
 		out.ACL = overlay.ACL
 	}
+	// Limits: overlay wins per provider name.
+	if len(overlay.Limits) > 0 {
+		out.Limits = make(map[string]Limits, len(base.Limits)+len(overlay.Limits))
+		for k, v := range base.Limits {
+			out.Limits[strings.ToLower(k)] = v
+		}
+		for k, v := range overlay.Limits {
+			out.Limits[strings.ToLower(k)] = v
+		}
+	}
+	// Ledger: each set field overlays on its own.
+	if overlay.Ledger.File != "" {
+		out.Ledger.File = overlay.Ledger.File
+	}
+	if overlay.Ledger.Disabled {
+		out.Ledger.Disabled = true
+	}
+	if overlay.Ledger.MaxBytes != 0 {
+		out.Ledger.MaxBytes = overlay.Ledger.MaxBytes
+	}
+	if overlay.Ledger.Keep != 0 {
+		out.Ledger.Keep = overlay.Ledger.Keep
+	}
+	if overlay.Ledger.Content != "" {
+		out.Ledger.Content = overlay.Ledger.Content
+	}
+	out.Control = base.Control.Merge(overlay.Control)
 
 	return &out
 }
@@ -568,6 +635,26 @@ func (c *Config) Validate() error {
 		problems = append(problems, base.Merge(c.Agentic).Validate(known)...)
 	}
 
+	// Control plane and declared limits.
+	if c.Control.Profile != "" {
+		if _, ok := control.NormalizeProfile(c.Control.Profile); !ok {
+			problems = append(problems, fmt.Sprintf("control.profile: unknown %q (auto | control | balanced)", c.Control.Profile))
+		}
+	}
+	if c.Control.MaxAttempts < 0 || c.Control.MaxWaitSec < 0 || c.Control.Hooks.TimeoutSec < 0 {
+		problems = append(problems, "control: max_attempts, max_wait_s and hooks.timeout_s must be >= 0")
+	}
+	for name, l := range c.Limits {
+		if l.RPM < 0 || l.RPD < 0 || l.TPM < 0 || l.TPD < 0 {
+			problems = append(problems, fmt.Sprintf("limits.%s: values must be >= 0", name))
+		}
+	}
+	switch strings.ToLower(c.Ledger.Content) {
+	case "", "off", "none", "preview", "full":
+	default:
+		problems = append(problems, fmt.Sprintf("ledger.content: unknown %q (off | preview | full)", c.Ledger.Content))
+	}
+
 	if len(problems) > 0 {
 		return &errValidation{Problems: problems}
 	}
@@ -632,6 +719,32 @@ func (c *Config) RouteNames() []string {
 		}
 	}
 	return out
+}
+
+// LimitsFor returns the declared quota of provider name: the top-level
+// limits entry wins over the provider entry's own limits.
+func (c *Config) LimitsFor(name string) Limits {
+	if l, ok := c.Limits[strings.ToLower(name)]; ok {
+		return l
+	}
+	if p, ok := c.ProviderByName(name); ok && p.Limits != nil {
+		return *p.Limits
+	}
+	return Limits{}
+}
+
+// LedgerPath returns the ledger file in effect ("" when disabled):
+// ledger.file, else server.usage_file, else the default location.
+func (c *Config) LedgerPath(defaultPath string) string {
+	switch {
+	case c.Ledger.Disabled:
+		return ""
+	case c.Ledger.File != "":
+		return c.Ledger.File
+	case c.Server.UsageFile != "":
+		return c.Server.UsageFile
+	}
+	return defaultPath
 }
 
 // KeyEnvMap returns a map provider→keyEnv-spec for use with core.NewEnvKeySource.

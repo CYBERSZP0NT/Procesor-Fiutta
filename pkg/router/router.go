@@ -36,6 +36,7 @@ import (
 	"time"
 
 	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/freellm-router/internal/control"
 	"github.com/silverx/freellm-router/internal/core"
 	g4fbridge "github.com/silverx/freellm-router/internal/providers/g4fbridge"
 	"github.com/silverx/freellm-router/internal/providers/ollama"
@@ -80,8 +81,12 @@ type Config struct {
 
 // Router is the public handle. Call Route() to send a request.
 type Router struct {
-	core *core.Router
-	task *taskRouter
+	core    *core.Router
+	task    *taskRouter
+	ctrl    *control.Controller
+	limiter Limiter
+	onTask  func(ctx context.Context, d *TaskDecision)
+	keys    core.KeySource
 }
 
 // New builds a Router from Config. Supported impls: "openailike" (any
@@ -202,7 +207,7 @@ func New(cfg Config) (*Router, error) {
 		return nil, err
 	}
 
-	return &Router{core: cr, task: tr}, nil
+	return &Router{core: cr, task: tr, keys: keySrc}, nil
 }
 
 // Route sends a chat request through the fallback chain.

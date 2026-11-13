@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/silverx/freellm-router/internal/config"
+	"github.com/silverx/freellm-router/internal/ledger"
 	"github.com/silverx/freellm-router/internal/server"
 )
 
@@ -54,6 +55,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Load(pCfgPath)
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
+	}
+
+	// The server keeps the event ledger (history, usage, sessions) at the
+	// default location unless the config names one or disables it.
+	if !cfg.Ledger.Disabled && cfg.LedgerPath("") == "" {
+		cfg.Ledger.File = ledger.DefaultPath()
 	}
 
 	timeout := globalTimeout()

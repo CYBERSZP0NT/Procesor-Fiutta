@@ -6,6 +6,76 @@ Changelog.
 ## [Unreleased]
 
 ### Added
+- **Event ledger.** One JSONL log of every request (failures included),
+  every upstream attempt (status, latency, tokens, the provider's
+  `x-ratelimit-*` snapshot, cooldown applied), every task decision,
+  session and control change. It is written by the server (rotated) and by
+  every CLI process. Old usage journals still read. Config: `ledger:`
+  (`file`, `content: off|preview|full`, rotation, `disabled`). **Note:**
+  the default `content: preview` stores the first 200 characters of each
+  prompt and answer on disk, which the old journal never did. Set
+  `ledger.content: off` to keep them out.
+- **Usage & limits**: `freellm-router usage` (`limits`, `quota`;
+  `--models --all --watch --json`) and `GET /v1/usage`. Shows rolling
+  1m/1h/24h/today windows per provider and model, measured against limits
+  you declare (`limits:` per provider, never guessed), plus the provider's
+  own last quota snapshot, live cooldowns and a status for each provider.
+- **History**: `freellm-router history` (`log`). Filters: `--since/--until`,
+  `--kind`, `--session`, `--provider`, `--errors`, `--grep`, `-n`. Also
+  `--follow`, `history sessions`, `history show <id>`, and
+  `history export --format jsonl|json|csv`. Over HTTP: `GET /v1/history`
+  (`?follow=1` streams Server-Sent Events) and `GET /v1/sessions`.
+- **Control plane** (`control:` config, `freellm-router ctl`,
+  `GET/PUT/PATCH /v1/control`, `DELETE /v1/cooldowns`):
+  - **∞ auto** profile: fallback, then wait out cooldowns and retry until
+    answered, bounded by request cancellation and `max_wait_s`. It escalates
+    once to `auto` and enforces budgets.
+  - **⛭ control** profile: no fallback, no silent retries, budgets enforced.
+  - Other controls: pause/resume, disable providers, allow-list, max
+    attempts, escalation route.
+  - **Pre-call hooks** can veto or rewrite a call. They fail closed: a hook
+    that cannot run vetoes the call. **Post-call hooks** run for auditing.
+    Hooks come from the config file only; the API refuses to set them.
+  - Without auth, the mutating endpoints and the history/sessions
+    endpoints only answer loopback clients.
+  - Per-request overrides: `X-Freellm-Profile`, `-Fallback`, `-Forever`,
+    `-Max-Attempts`, `-Tags`.
+- **Integrations**:
+  - `exec` (`ask`, `run`): a one-shot call for scripts. It reads context
+    from stdin and `--file`, takes `--profile`, `--forever` and
+    `--deadline`, prints `--json`, and has stable exit codes (0 ok, 1 error,
+    2 all failed, 3 vetoed). `--no-stdin` / `FREELLM_NO_STDIN=1` for
+    harnesses that keep stdin open.
+  - `env`: prints `OPENAI_BASE_URL` and the related variables for sh, fish,
+    powershell, dotenv or json.
+  - `wrap -- <cmd>`: runs any harness as one tracked session. It uses the
+    running server or starts a private one, and passes through the exit
+    code.
+  - **Sessions** can be set with the base URL `/s/<id>/v1`,
+    `X-Freellm-Session`, `metadata.session`, `--session` or
+    `$FREELLM_SESSION`.
+- **Interactive TUI** (`freellm-router tui`, aliases `ui`, `top`), built on
+  bubbletea. Tabs: dashboard (sparkline, top providers, failures), usage,
+  history (search/filter/follow/detail), sessions, streaming chat, and a
+  control panel that can save its settings to the config. It works live
+  against a server or locally from the ledger.
+- `GET /v1/ping`. Response headers `X-Freellm-Request-Id` and
+  `X-Freellm-Session`. Global `-m` shorthand for `--model` and `--url` flag.
+- `pkg/router`: `SetControl`, `SetLimiter`, `SetOnAttempt`, `SetOnTask`,
+  `WithOverride`, `Resolve`, `Cooldowns`, `ClearCooldowns`, `Unavailable`,
+  `KeyCount`. `internal/core`: per-attempt observer, `StreamOut.Meta`
+  (status and rate-limit headers), per-call options (gate, maximum entries
+  and attempts), typed `ChainError`.
+
+### Fixed
+- The server wrote two usage records per successful chat and none for
+  failed ones. It now writes exactly one record per request, errors
+  included.
+- `serve` wrote no usage journal unless `server.usage_file` was set, while
+  `stats` read the default path. Both now use the same default ledger.
+- `stats` panicked on a `via` without `/`, and on keyed records without
+  token counts.
+- The in-flight request counter was not atomic.
 - **Task-router modes.** **[Rozkład Jazdy]** (`rozklad-jazdy`) is the new
   default everywhere. It goes all in: the strongest available model first,
   then the biggest context, with cost, speed and rule tier caps ignored, and

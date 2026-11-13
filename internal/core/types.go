@@ -169,6 +169,10 @@ type StreamOut struct {
 	// streaming. Optional — used by the HTTP server to set the
 	// X-Freellm-Routed-Via header as soon as the first byte is committed.
 	Serving func(via string)
+	// Meta is called by providers that see HTTP response headers, once per
+	// upstream response (success or error), with the status and the quota
+	// snapshot parsed from the headers (nil when none). Optional.
+	Meta func(status int, rl *RateLimit)
 }
 
 // StreamDone is returned by Provider.Stream after the full response has

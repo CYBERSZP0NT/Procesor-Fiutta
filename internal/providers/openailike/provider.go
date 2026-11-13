@@ -215,6 +215,11 @@ func (p *Provider) Stream(ctx context.Context, chatReq *core.ChatRequest, out *c
 	}
 	defer resp.Body.Close()
 
+	// Report status + quota headers (x-ratelimit-*, retry-after) upward.
+	if out != nil && out.Meta != nil {
+		out.Meta(resp.StatusCode, core.ParseRateLimit(resp.Header))
+	}
+
 	// Map HTTP errors.
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		errBody, _ := io.ReadAll(io.LimitReader(resp.Body, 8192))

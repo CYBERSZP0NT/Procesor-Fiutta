@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
+	"github.com/silverx/freellm-router/internal/ledger"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -130,8 +131,8 @@ func corsmw(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-ID, X-Freellm-Task, X-Freellm-Task-Mode")
-		w.Header().Set("Access-Control-Expose-Headers", "X-Freellm-Routed-Via, X-Freellm-Task, X-Freellm-Task-Reason")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-ID, X-Freellm-Task, X-Freellm-Task-Mode, X-Freellm-Session, X-Freellm-Profile, X-Freellm-Fallback, X-Freellm-Forever, X-Freellm-Max-Attempts, X-Freellm-Tags")
+		w.Header().Set("Access-Control-Expose-Headers", "X-Freellm-Routed-Via, X-Freellm-Task, X-Freellm-Task-Reason, X-Freellm-Request-Id, X-Freellm-Session, X-Freellm-Attempts")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -269,29 +270,12 @@ func ratelimitmw(tb *TokenBucket) Middleware {
 // usage accounting (in-memory + optional append-JSONL, pluggable)
 // ---------------------------------------------------------------------------
 
-// UsageRecord is one accounting line.
-type UsageRecord struct {
-	T         time.Time `json:"t"`
-	Path      string    `json:"path,omitempty"`
-	Method    string    `json:"method,omitempty"`
-	Status    int       `json:"status,omitempty"`
-	RequestID string    `json:"request_id,omitempty"`
-	Key       string    `json:"key,omitempty"`
-	LatencyMS int64     `json:"latency_ms,omitempty"`
-	// chat-specific (filled by the handler, not the middleware)
-	Model  string       `json:"model,omitempty"`
-	Via    string       `json:"via,omitempty"`
-	Route  string       `json:"route,omitempty"`
-	Stream bool         `json:"stream,omitempty"`
-	Tokens *UsageTokens `json:"tokens,omitempty"`
-	Err    string       `json:"error,omitempty"`
-}
+// UsageRecord is one accounting line: a ledger event (the server's
+// request records, upstream attempts and task decisions all share it).
+type UsageRecord = ledger.Event
 
 // UsageTokens holds per-call token counts.
-type UsageTokens struct {
-	Prompt     int `json:"prompt_tokens"`
-	Completion int `json:"completion_tokens"`
-}
+type UsageTokens = ledger.Tokens
 
 // UsageRecorder is the pluggable accounting sink.
 type UsageRecorder interface {
@@ -348,24 +332,50 @@ func (b *BasicRecorder) Entries() []UsageRecord {
 	return out
 }
 
+// quietPath reports read-only observability/health endpoints.
+func quietPath(p string) bool {
+	switch p {
+	case "/v1/usage", "/v1/history", "/v1/sessions", "/v1/ping", "/v1/control",
+		"/v1/health", "/health", "/healthz", "/v1/metrics", "/metrics":
+		return true
+	}
+	return false
+}
+
 func usagemw(rec UsageRecorder) Middleware {
 	if rec == nil {
 		return func(next http.Handler) http.Handler { return next }
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Polling the observability endpoints is not worth a ledger line.
+			if r.Method == http.MethodGet && quietPath(r.URL.Path) {
+				next.ServeHTTP(w, r)
+				return
+			}
 			start := time.Now()
 			sw := ensureStatus(w)
-			next.ServeHTTP(sw, r)
-			rec.Record(UsageRecord{
-				T:         start,
-				Path:      r.URL.Path,
-				Method:    r.Method,
-				Status:    sw.statusOut(),
-				RequestID: RequestID(r.Context()),
-				Key:       AuthKey(r.Context()),
-				LatencyMS: time.Since(start).Milliseconds(),
-			})
+			// One record per request: the chat handler fills the chat fields
+			// (model, via, tokens, error, task) into this event through the
+			// context; it is written once here, failures included.
+			c := &ledger.Call{ID: RequestID(r.Context()), Session: r.Header.Get("X-Freellm-Session"), Source: "server"}
+			c.Event = &UsageRecord{
+				T:       start,
+				Kind:    ledger.KindHTTP,
+				Path:    r.URL.Path,
+				Method:  r.Method,
+				ID:      c.ID,
+				Session: c.Session,
+				Source:  c.Source,
+				Key:     AuthKey(r.Context()),
+				Client:  r.UserAgent(),
+			}
+			next.ServeHTTP(sw, r.WithContext(ledger.WithCall(r.Context(), c)))
+			ev := c.Event
+			ev.Status = sw.statusOut()
+			ev.LatencyMS = time.Since(start).Milliseconds()
+			ev.Session = c.Session
+			rec.Record(*ev)
 		})
 	}
 }

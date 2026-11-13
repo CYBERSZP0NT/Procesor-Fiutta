@@ -59,10 +59,12 @@ func runChat(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("config: %w", err)
 	}
 
-	r, err := buildRouter(cfg, globalTimeout())
+	r, rt, err := openRuntime(cfg, "cli")
 	if err != nil {
-		return fmt.Errorf("router: %w", err)
+		return err
 	}
+	defer rt.Close()
+	session := os.Getenv("FREELLM_SESSION")
 
 	messages := make([]router.Message, 0, 2)
 	if chatOptsVar.system != "" {
@@ -119,7 +121,7 @@ func runChat(cmd *cobra.Command, args []string) error {
 
 	if stream {
 		var err error
-		via, _, err = r.RouteWithOptions(ctx, selector, messages, "", opts, func(s string) {
+		via, _, err = routeLogged(ctx, r, rt, session, selector, messages, opts, func(s string) {
 			fmt.Print(s)
 		})
 		if err != nil {
@@ -130,7 +132,7 @@ func runChat(cmd *cobra.Command, args []string) error {
 	} else {
 		var err error
 		var done *router.Done
-		via, done, err = r.RouteWithOptions(ctx, selector, messages, "", opts, nil)
+		via, done, err = routeLogged(ctx, r, rt, session, selector, messages, opts, nil)
 		if err != nil {
 			return err
 		}

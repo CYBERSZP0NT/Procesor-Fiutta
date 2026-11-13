@@ -1,19 +1,17 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"text/tabwriter"
-	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/silverx/freellm-router/internal/config"
 	"github.com/silverx/freellm-router/internal/journal"
+	"github.com/silverx/freellm-router/internal/ledger"
 )
 
 var statsOptsVar struct {
@@ -41,23 +39,6 @@ Examples:
 func init() {
 	statsCmd.Flags().StringVar(&statsOptsVar.date, "date", "", "restrict to one day (YYYY-MM-DD, local time)")
 	statsCmd.Flags().StringVar(&statsOptsVar.file, "file", "", "journal file to read (default: server usage journal)")
-}
-
-// journalRecord is the subset of the server's UsageRecord the stats need.
-type journalRecord struct {
-	T         time.Time `json:"t"`
-	Status    int       `json:"status"`
-	Key       string    `json:"key"`
-	LatencyMS int64     `json:"latency_ms"`
-	Model     string    `json:"model"`
-	Via       string    `json:"via"`
-	Route     string    `json:"route"`
-	Stream    bool      `json:"stream"`
-	Err       string    `json:"error"`
-	Tokens    *struct {
-		Prompt     int `json:"prompt_tokens"`
-		Completion int `json:"completion_tokens"`
-	} `json:"tokens"`
 }
 
 // Stats is the aggregate output.
@@ -93,38 +74,19 @@ type KeyAgg struct {
 func runStats(cmd *cobra.Command, args []string) error {
 	path := statsOptsVar.file
 	if path == "" {
-		if cfg, err := config.Load(pCfgPath); err == nil && cfg.Server.UsageFile != "" {
-			path = cfg.Server.UsageFile
-		} else {
-			path = defaultJournalPath()
-		}
+		cfg, _ := config.Load(pCfgPath)
+		path = ledgerPathFor(cfg)
 	}
 	return printStats(path, statsOptsVar.date)
 }
 
 // defaultJournalPath mirrors the server's default journal location.
-func defaultJournalPath() string {
-	if dir := os.Getenv("XDG_DATA_HOME"); dir != "" {
-		return filepath.Join(dir, "freellm", "usage.jsonl")
-	}
-	home, err := os.UserHomeDir()
-	if err != nil || home == "" {
-		return filepath.Join(".local", "share", "freellm", "usage.jsonl")
-	}
-	return filepath.Join(home, ".local", "share", "freellm", "usage.jsonl")
-}
+func defaultJournalPath() string { return ledger.DefaultPath() }
 
-// parseErr is reserved for structured parse errors (future).
-type parseErr struct {
-	line int
-	err  error
-}
-
-var _ = parseErr{}
-
-// collectStats reads `path` (+ rotated files) and aggregates.
+// collectStats reads `path` (+ rotated files) and aggregates the request
+// records (attempts, task decisions and other ledger events are skipped).
 func collectStats(path, day string) (*Stats, error) {
-	lines, err := journal.ReadAll(path, journal.DefaultKeep)
+	events, err := ledger.ReadFile(path, journal.DefaultKeep)
 	if err != nil {
 		return nil, err
 	}
@@ -134,58 +96,50 @@ func collectStats(path, day string) (*Stats, error) {
 		Keys:         map[string]KeyAgg{},
 	}
 	var latTotal int64
-	for i, raw := range lines {
-		var rec journalRecord
-		if err := json.Unmarshal(raw, &rec); err != nil {
-			continue // tolerate partially-written or foreign lines
+	for i := range events {
+		rec := &events[i]
+		if rec.EffectiveKind() != ledger.KindRequest {
+			continue
 		}
-		if day != "" {
-			if rec.T.Format("2006-01-02") != day {
-				continue
-			}
+		if day != "" && rec.T.Format("2006-01-02") != day {
+			continue
 		}
 		s.Total++
 		if rec.Stream {
 			s.Streaming++
 		}
 		latTotal += rec.LatencyMS
-		if rec.Status >= 400 {
+		failed := rec.Failed()
+		if failed {
 			s.Errors++
 			s.StatusCounts[fmt.Sprintf("%d", rec.Status)]++
 		}
-		if rec.Via != "" {
-			prov := rec.Via[:strings.IndexByte(rec.Via, '/')]
-			if prov == "" {
-				prov = rec.Via
-			}
+		if prov := rec.ProviderName(); prov != "" {
 			agg := s.Providers[prov]
 			agg.Requests++
-			if rec.Status >= 400 {
+			if failed {
 				agg.Errors++
 			}
 			agg.Stream += boolInt(rec.Stream)
 			agg.Latency += rec.LatencyMS
 			s.Providers[prov] = agg
 		}
+		var prompt, completion int
+		if rec.Tokens != nil {
+			prompt, completion = max(rec.Tokens.Prompt, 0), max(rec.Tokens.Completion, 0)
+		}
+		s.TotalPrompt += prompt
+		s.TotalCompletion += completion
 		if rec.Key != "" {
-			k := rec.Key
-			agg := s.Keys[k]
+			agg := s.Keys[rec.Key]
 			agg.Requests++
-			if rec.Status >= 400 {
+			if failed {
 				agg.Errors++
 			}
-			if rec.Tokens != nil {
-				agg.Prompt += rec.Tokens.Prompt
-				agg.Completion += rec.Tokens.Completion
-			}
-			s.Keys[k] = agg
-			s.TotalPrompt += rec.Tokens.Prompt
-			s.TotalCompletion += rec.Tokens.Completion
-		} else if rec.Tokens != nil {
-			s.TotalPrompt += rec.Tokens.Prompt
-			s.TotalCompletion += rec.Tokens.Completion
+			agg.Prompt += prompt
+			agg.Completion += completion
+			s.Keys[rec.Key] = agg
 		}
-		_ = i
 	}
 	if s.Total > 0 {
 		s.AvgLatencyMS = latTotal / int64(s.Total)
