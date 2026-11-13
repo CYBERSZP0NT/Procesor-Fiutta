@@ -56,6 +56,7 @@ internal/server/           OpenAI-compatible HTTP server (chat completions,
                            models, health, metrics) + middleware chain
 internal/cli/              cobra commands
 internal/keys/             key sources: env, file, (later: keyring, vault)
+internal/agentic/          task router: classifier, tier rules, picker (data in defaults/agentic.yaml)
 pkg/router/                small public Go API (for embedding)
 defaults/                  embedded YAML: default providers, default routes,
                            free-tier notes (data, not code)

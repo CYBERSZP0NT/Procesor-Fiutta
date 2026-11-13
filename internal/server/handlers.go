@@ -41,6 +41,14 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 		seen[name] = true
 	}
 
+	// 1b) Task-router aliases ("agent", "task"): pick a model per request.
+	for _, name := range s.router.TaskAliases() {
+		if !seen[name] {
+			data = append(data, oaModel{ID: name, Object: "model", Created: now, OwnedBy: "freellm-router/agentic"})
+			seen[name] = true
+		}
+	}
+
 	// 2) Per-provider live catalog, fetched in parallel (tolerant of failure).
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
@@ -277,6 +285,8 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 			"GET  /v1/health",
 			"GET  /v1/notes",
 			"GET  /v1/metrics",
+			"GET  /v1/route   (task-router catalog)",
+			"POST /v1/route   (task-router preview)",
 		},
 	})
 }

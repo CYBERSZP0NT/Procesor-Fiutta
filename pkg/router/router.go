@@ -74,11 +74,14 @@ type Config struct {
 	RetrySame bool
 	// AutoAlias is the route name used as fallback (default "auto").
 	AutoAlias string
+	// Agentic overlays the embedded task-router spec (nil = defaults).
+	Agentic *TaskSpec
 }
 
 // Router is the public handle. Call Route() to send a request.
 type Router struct {
 	core *core.Router
+	task *taskRouter
 }
 
 // New builds a Router from Config. Supported impls: "openailike" (any
@@ -188,7 +191,18 @@ func New(cfg Config) (*Router, error) {
 		MaxAtt:      intCfg.Policies.MaxChainAttempts,
 	})
 
-	return &Router{core: cr}, nil
+	kinds := make(map[string]string, len(cfg.Providers))
+	for _, pc := range cfg.Providers {
+		if _, ok := provMap[pc.Name]; ok {
+			kinds[strings.ToLower(pc.Name)] = pc.Kind
+		}
+	}
+	tr, err := newTaskRouter(cfg.Agentic, kinds, cfg.Routes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Router{core: cr, task: tr}, nil
 }
 
 // Route sends a chat request through the fallback chain.
@@ -227,7 +241,7 @@ func (r *Router) Route(
 		out = &core.StreamOut{TextSink: sink}
 	}
 
-	result, err := r.core.Route(ctx, core.ModelSelector{Name: selector}, req, out)
+	result, err := r.dispatch(ctx, selector, req, out, nil, nil)
 	if err != nil {
 		return "", nil, err
 	}
@@ -250,6 +264,9 @@ type RouteOpts struct {
 	TopP        *float64
 	Tools       []Tool
 	ToolChoice  string // "" | "auto" | "none" | "required" | "function:<name>"
+	// Task carries task-router overrides (used when the selector is a
+	// task alias such as "agent").
+	Task *TaskHints
 }
 
 // RouteWithOptions is like Route but accepts advanced options.
@@ -289,7 +306,7 @@ func (r *Router) RouteWithOptions(
 		out = &core.StreamOut{TextSink: sink}
 	}
 
-	result, err := r.core.Route(ctx, core.ModelSelector{Name: selector}, req, out)
+	result, err := r.dispatch(ctx, selector, req, out, nil, nil)
 	if err != nil {
 		return "", nil, err
 	}
@@ -408,6 +425,10 @@ type Sinks struct {
 	// Serving is called with the "provider/model" via label as soon as the
 	// chosen provider starts streaming its first delta (streaming mode).
 	Serving func(via string)
+	// Task is called with the task router's decision (selector is a task
+	// alias): before the upstream call, again after each escalation, and
+	// once more with Via set when the answer is accepted.
+	Task func(*TaskDecision)
 }
 
 // RouteRaw routes a request with full control over streaming mode and sinks.
@@ -475,7 +496,11 @@ func (r *Router) RouteRaw(
 		out.Serving = s.Serving
 	}
 
-	res, err := r.core.Route(ctx, core.ModelSelector{Name: selector}, req, out)
+	var hints *TaskHints
+	if opts != nil {
+		hints = opts.Task
+	}
+	res, err := r.dispatch(ctx, selector, req, out, hints, s.Task)
 	if err != nil {
 		return "", nil, err
 	}
@@ -559,6 +584,7 @@ func NewFromConfig(cfg *config.Config, timeout time.Duration) (*Router, error) {
 		CooldownLong:     time.Duration(cfg.Policies.CooldownLongSec) * time.Second,
 		MaxChainAttempts: cfg.Policies.MaxChainAttempts,
 		RetrySame:        cfg.Policies.RetrySame,
+		Agentic:          &cfg.Agentic,
 	}
 	return New(rc)
 }
