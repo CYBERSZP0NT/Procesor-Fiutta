@@ -100,6 +100,8 @@ func runHook(ctx context.Context, argv []string, payload any, timeout time.Durat
 	cmd.Stdin = bytes.NewReader(append(in, '\n'))
 	var o, e bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &o, &e
+	// A killed hook's children may keep the pipes open; do not wait on them.
+	cmd.WaitDelay = 500 * time.Millisecond
 	err = cmd.Run()
 	if ctx.Err() == context.DeadlineExceeded {
 		err = fmt.Errorf("hook timed out after %s", timeout)
