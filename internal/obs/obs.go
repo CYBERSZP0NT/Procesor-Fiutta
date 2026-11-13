@@ -38,13 +38,17 @@ type Options struct {
 	// Seed preloads the in-memory ring and the quota tracker from the
 	// ledger file (servers and long-lived clients).
 	Seed bool
+	// DefaultPath is the ledger file used when the config names none ("" =
+	// in-memory only). The CLI passes ledger.DefaultPath(); server.New
+	// passes "" so tests and library users never write to $HOME.
+	DefaultPath string
 }
 
 // Open builds a Runtime from cfg. A ledger that cannot be opened degrades
 // to in-memory only; it never stops the router from working.
 func Open(cfg *config.Config, o Options) *Runtime {
 	rt := &Runtime{
-		Path:    cfg.LedgerPath(ledger.DefaultPath()),
+		Path:    cfg.LedgerPath(o.DefaultPath),
 		Keep:    cfg.Ledger.Keep,
 		Source:  o.Source,
 		content: strings.ToLower(cfg.Ledger.Content),

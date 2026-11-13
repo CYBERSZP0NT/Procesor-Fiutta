@@ -77,6 +77,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&pModel, "model", "", "default model / route alias")
 	rootCmd.PersistentFlags().IntVar(&pTimeoutSec, "timeout", 120, "per-request timeout (seconds)")
 	rootCmd.PersistentFlags().BoolVar(&pJSON, "json", false, "output JSON instead of human-readable text")
+	rootCmd.PersistentFlags().StringVar(&pURL, "url", "", "running server to talk to (default: $FREELLM_URL or the configured host:port)")
 
 	rootCmd.AddCommand(
 		chatCmd,

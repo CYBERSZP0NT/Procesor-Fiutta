@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"github.com/silverx/freellm-router/internal/ledger"
+	"github.com/silverx/freellm-router/internal/obs"
 	"io"
 	"log/slog"
 	"net"
@@ -33,7 +35,9 @@ type Server struct {
 	mu      sync.RWMutex
 	lastErr map[string]string // provider name → last upstream error text
 
-	inFlight int64 // atomic: requests currently inside the chat handler
+	inFlight atomic.Int64 // requests currently inside the chat handler
+
+	rt *obs.Runtime // ledger + quota tracker + control plane
 
 	once   bool
 	onceCh chan int32 // success(1) / failure(2) of the first chat call
@@ -56,6 +60,13 @@ func New(cfg *config.Config, timeout time.Duration) (*Server, error) {
 	m := NewMetrics()
 	rec := NewBasicRecorder(1000)
 
+	// Ledger, quota tracking and control. The file is only written when one
+	// is configured (ledger.file / server.usage_file); `serve` sets the
+	// default location, library users and tests opt in.
+	rt := obs.Open(cfg, obs.Options{Source: "server", Rotate: true, Seed: true})
+	rt.Attach(r)
+	rec.SetFileSink(func(e UsageRecord) { _ = rt.Hub.Write(e) })
+
 	s := &Server{
 		serverStarted: time.Now(),
 		cfg:           cfg,
@@ -65,6 +76,7 @@ func New(cfg *config.Config, timeout time.Duration) (*Server, error) {
 		logger:        logger,
 		maxBody:       cfg.Server.MaxBodyBytes,
 		lastErr:       make(map[string]string),
+		rt:            rt,
 		onceCh:        make(chan int32, 1),
 	}
 	// Wire upstream-error observation into the core router for metrics.
@@ -81,15 +93,6 @@ func New(cfg *config.Config, timeout time.Duration) (*Server, error) {
 		s.setLastErr(provider, err)
 	})
 
-	// Optional usage JSONL file.
-	if path := cfg.Server.UsageFile; path != "" {
-		if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
-			rec.SetFileSink(func(r UsageRecord) {
-				line := toJSONLine(r)
-				_, _ = f.Write(line)
-			})
-		}
-	}
 	return s, nil
 }
 
@@ -103,12 +106,6 @@ func (s *Server) lastError(provider string) string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.lastErr[provider]
-}
-
-func toJSONLine(r UsageRecord) []byte {
-	b, _ := jsonMarshal(r)
-	b = append(b, '\n')
-	return b
 }
 
 // ---------------------------------------------------------------------------
@@ -136,7 +133,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /metrics", s.handleMetrics)
 	mux.HandleFunc("GET /{$}", s.handleRoot)
 
-	return BuildChain(
+	s.registerObservability(mux)
+
+	return sessionPrefix(BuildChain(
 		mux,
 		s.logger,
 		s.cfg.Server.Auth,
@@ -144,7 +143,7 @@ func (s *Server) Handler() http.Handler {
 		s.rec,
 		s.maxBody,
 		s.cfg.Server.MiddlewareOff...,
-	)
+	))
 }
 
 func buildBucket(cfg *config.Config) *TokenBucket {
@@ -243,6 +242,7 @@ func (s *Server) Run(ctx context.Context, o ServeOpts) error {
 			sctx, cancel := context.WithTimeout(context.Background(), grace)
 			shutErr := srv.Shutdown(sctx)
 			cancel()
+			_ = s.rt.Close()
 			return shutErr
 		case code := <-s.onceCh:
 			s.logger.Info("--once: first request finished", "code", code)
@@ -262,7 +262,7 @@ func (s *Server) Run(ctx context.Context, o ServeOpts) error {
 func (s *Server) drain(d time.Duration) {
 	deadline := time.Now().Add(d)
 	for {
-		if s.inFlight == 0 {
+		if s.inFlight.Load() == 0 {
 			return
 		}
 		if time.Now().After(deadline) {
@@ -273,7 +273,7 @@ func (s *Server) drain(d time.Duration) {
 }
 
 // InFlight returns the current count of in-progress chat requests (tests).
-func (s *Server) InFlight() int64 { return s.inFlight }
+func (s *Server) InFlight() int64 { return s.inFlight.Load() }
 
 // Metrics exposes the metrics registry (tests / embeds).
 func (s *Server) Metrics() *Metrics { return s.metrics }
@@ -296,13 +296,8 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	start := time.Now()
-	s.inFlight++
-	defer func() {
-		s.inFlight--
-		if s.once {
-			// fired below on success/failure via onceFire
-		}
-	}()
+	s.inFlight.Add(1)
+	defer s.inFlight.Add(-1)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -361,6 +356,11 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 			opts.ToolChoice = toolChoiceString(q.ToolChoice)
 		}
 	}
+
+	// Ledger record + control override for this call.
+	ctx := s.beginChat(w, r, &q, msgs)
+	r = r.WithContext(ctx)
+	ev := callEvent(ctx)
 
 	// Task-router hints: X-Freellm-Task header + OpenAI "metadata".
 	if s.router.IsTaskAlias(q.Model) {
@@ -444,10 +444,21 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	v, done, rerr := s.router.RouteRaw(r.Context(), selector, msgs, q.Model, q.Stream, opts, sinks)
+	if ev != nil {
+		ev.Route = firstNonEmpty(ev.Route, selector)
+	}
 	if rerr != nil {
+		if ev != nil {
+			ev.Err = ledger.Clip(rerr.Error(), 1000)
+		}
 		s.onceFail(selector + " failed: " + rerr.Error())
 		if !completed {
 			status, typ := statusFromError(rerr)
+			if ve, ok := rerr.(*router.VetoError); ok {
+				writeOAError(w, http.StatusForbidden, ve.Error(), "vetoed", "")
+				s.metrics.RecordRequest(time.Since(start))
+				return
+			}
 			writeOAError(w, status, "all providers failed for route "+selector+": "+errToMsg(rerr), typ, "")
 			s.metrics.RecordRequest(time.Since(start))
 			return
@@ -503,24 +514,15 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	s.metrics.RecordRoute(labelFor(q.Model))
 	s.metrics.RecordRequest(time.Since(start))
 
-	// Usage record (chat level with via/tokens).
-	s.rec.Record(UsageRecord{
-		T:         start,
-		Path:      r.URL.Path,
-		Method:    r.Method,
-		Status:    http.StatusOK,
-		RequestID: RequestID(r.Context()),
-		Key:       AuthKey(r.Context()),
-		LatencyMS: time.Since(start).Milliseconds(),
-		Model:     q.Model,
-		Route:     selector,
-		Via:       v,
-		Stream:    q.Stream,
-		Tokens: &UsageTokens{
-			Prompt:     done.PromptTokens,
-			Completion: done.CompletionTokens,
-		},
-	})
+	// Complete the request's ledger record (written by the usage middleware).
+	if ev != nil {
+		ev.Via = v
+		if i := strings.IndexByte(v, '/'); i > 0 {
+			ev.Provider = v[:i]
+		}
+		ev.Tokens = &UsageTokens{Prompt: done.PromptTokens, Completion: done.CompletionTokens}
+		ev.Answer = s.rt.Capture(buf.String())
+	}
 
 	s.onceOK()
 }
