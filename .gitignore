@@ -16,7 +16,13 @@ Thumbs.db
 .vscode/
 
 # Go
-freellm-router
+# Anchored: a bare "freellm-router" also matched cmd/freellm-router/ and
+# kept main.go out of the repo.
+/freellm-router
 dist/
 *.exe
-bin/   # built plugin binaries
+# built plugin binaries
+/bin/
+
+# Agent worktrees
+.claude/worktrees/
