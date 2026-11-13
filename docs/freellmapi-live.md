@@ -95,10 +95,13 @@ that only gets the `monthly` tier is not live.
   `live.pubkey` override the key, for a self-hosted catalog only.
 - The verdict is cached in the user cache dir (`~/.cache/szmelc/live.json`
   and `live-catalog.json`, mode 0600, bound to a hash of the key, never the
-  key itself). The license is checked again after 6 h. The catalog is
-  fetched again after 12 h, which is how often FreeLLMAPI polls it; a 304
-  keeps the cached copy. A cached catalog is verified again each time it is
-  loaded.
+  key itself). The check runs when a command starts (or `serve` starts):
+  the license is checked again once the verdict is older than 6 h, and the
+  catalog is fetched again once it is older than 12 h, which is how often
+  FreeLLMAPI polls it. A 304 keeps the cached copy. A running `serve` keeps
+  the catalog it started with. To pick up a new one, run
+  `szmelc-router live sync` and restart `serve`. A cached catalog is verified
+  again each time it is loaded.
 - Without a key, nothing is read or written and no request is made.
 - An unreachable service never turns live off. A "valid" verdict is kept for
   up to 7 days of outage, with a warning. A network error never fails

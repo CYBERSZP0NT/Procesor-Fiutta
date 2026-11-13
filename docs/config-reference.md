@@ -217,8 +217,11 @@ Full guide: [freellmapi-live.md](freellmapi-live.md).
 | `pubkey` | string | pinned Ed25519 key | catalog signing key, for a self-hosted catalog (`$CATALOG_PUBKEY`) |
 
 Cache: `$FREELLM_LIVE_CACHE`, else `~/.cache/szmelc/live.json` +
-`live-catalog.json` (0600). The license is checked again after 6 h and the
-catalog after 12 h. `szmelc-router live check|sync` forces both.
+`live-catalog.json` (0600). When a command (or `serve`) starts, the license
+is checked again once the verdict is older than 6 h and the catalog once it
+is older than 12 h. A running `serve` keeps what it started with.
+`szmelc-router live check` checks the license again now, and `live sync` also
+downloads the catalog again.
 
 ## `limits` — `map[string]limits`
 
