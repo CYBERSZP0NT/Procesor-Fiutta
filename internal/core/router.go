@@ -18,6 +18,7 @@ type Router struct {
 	retrySame bool           // retry same provider once before moving on
 	maxAtt    int            // max total stream attempts
 	onErr     func(via string, err error)
+	onAttempt func(ctx context.Context, a AttemptInfo)
 }
 
 // RouterOpts configures a Router.
@@ -66,6 +67,8 @@ type RouteResult struct {
 	Via      string      // "provider/model" label of the provider that served the request
 	Done     *StreamDone // finish reason + token counts
 	FullText string      // full text (accumulated from TextSink)
+	Attempts int         // upstream calls made (including failed ones)
+	Trail    []string    // entries skipped or failed before Via served
 }
 
 // Route resolves the chain and walks it in order, returning the first
@@ -103,9 +106,23 @@ func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest,
 	chain = deduped
 
 	// 2. Walk through providers with retry/cooldown logic.
+	opts := CallOptionsFrom(ctx)
+	if opts.MaxEntries > 0 && len(chain) > opts.MaxEntries {
+		chain = chain[:opts.MaxEntries]
+	}
+	maxAtt := r.maxAtt
+	if opts.MaxAttempts > 0 {
+		maxAtt = opts.MaxAttempts
+	}
 	attempts := 0
 	var lastErr error
 	var lastErrs []string
+	var soonest time.Duration
+	noteCooldown := func(d time.Duration) {
+		if d > 0 && (soonest == 0 || d < soonest) {
+			soonest = d
+		}
+	}
 
 	for i := 0; i < len(chain); i++ {
 		entry := chain[i]
@@ -119,6 +136,18 @@ func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest,
 			lastErr = NewUpstreamErr(0, provName, modelID, "provider not registered", nil)
 			lastErrs = append(lastErrs, via+": not registered")
 			continue
+		}
+
+		// Operator gate (disabled providers, allow-lists, quota budgets).
+		if opts.Gate != nil {
+			if ok, why := opts.Gate(ctx, provName, modelID); !ok {
+				if why == "" {
+					why = "blocked by gate"
+				}
+				lastErr = NewUpstreamErr(0, provName, modelID, why, nil)
+				lastErrs = append(lastErrs, via+": "+why)
+				continue
+			}
 		}
 
 		// Availability check.
@@ -136,6 +165,7 @@ func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest,
 		// Cooldown check.
 		if r.cooldown.Has(ctx, via) {
 			remaining := r.cooldown.Remaining(ctx, via)
+			noteCooldown(remaining)
 			lastErr = NewUpstreamErr(429, provName, modelID, "in cooldown ("+remaining.String()+")", nil)
 			lastErrs = append(lastErrs, via+": cooldown ("+remaining.String()+")")
 			continue
@@ -148,7 +178,7 @@ func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest,
 		}
 
 		for attempt := 1; attempt <= maxTry; attempt++ {
-			if attempts >= r.maxAtt {
+			if attempts >= maxAtt {
 				lastErrs = append(lastErrs, "max attempts reached")
 				break
 			}
@@ -167,6 +197,7 @@ func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest,
 					TextSink: func(s string) { textBuf.WriteString(s) },
 				}
 			}
+			callOut, seen := observeOut(callOut)
 
 			// Per-entry concrete model (contract: chain entries are
 			// provider/model and bind the model the provider actually offers).
@@ -181,7 +212,12 @@ func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest,
 				c.Model = modelID
 				callReq = &c
 			}
+			t0 := time.Now()
 			done, err := prov.Stream(ctx, callReq, callOut)
+			info := AttemptInfo{
+				Via: via, Provider: provName, Model: modelID, N: attempts,
+				Latency: time.Since(t0), RateLimit: seen.rl, StartedOut: seen.started,
+			}
 
 			if err == nil {
 				// Success!
@@ -193,16 +229,20 @@ func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest,
 				if done == nil {
 					done = &StreamDone{FinishReason: "stop"}
 				}
-				return &RouteResult{Via: via, Done: done, FullText: fullText}, nil
+				info.Status, info.Done = 200, done
+				r.observe(ctx, info)
+				return &RouteResult{Via: via, Done: done, FullText: fullText, Attempts: attempts, Trail: lastErrs}, nil
 			}
 
 			// Classify the error.
 			ue, isUp := IsUpstreamErr(err)
 			if isUp {
 				lastErr = ue
+				info.Status = ue.Status
 				lastErrs = append(lastErrs, fmt.Sprintf("%s: HTTP %d %s", via, ue.Status, ue.Msg))
 			} else {
 				lastErr = err
+				info.Status = seen.status
 				lastErrs = append(lastErrs, via+": "+err.Error())
 			}
 
@@ -211,7 +251,11 @@ func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest,
 			}
 
 			// Apply cooldown.
-			r.cooldown.Set(ctx, via, r.cooldownFor(err))
+			cd := r.cooldownFor(err)
+			r.cooldown.Set(ctx, via, cd)
+			noteCooldown(cd)
+			info.Err, info.Cooldown = err, cd
+			r.observe(ctx, info)
 
 			// 4xx (non-429/408): don't retry same provider.
 			if isUp && ue.Status >= 400 && ue.Status < 500 && ue.Status != 429 && ue.Status != 408 {
@@ -220,8 +264,47 @@ func (r *Router) Route(ctx context.Context, sel ModelSelector, req *ChatRequest,
 		}
 	}
 
-	return nil, fmt.Errorf("router: all %d chain entries failed:\n  %s\n%v",
-		len(chain), strings.Join(lastErrs, "\n  "), lastErr)
+	return nil, &ChainError{Entries: len(chain), Attempts: attempts, Trail: lastErrs, Last: lastErr, Soonest: soonest}
+}
+
+func (r *Router) observe(ctx context.Context, a AttemptInfo) {
+	if r.onAttempt != nil {
+		r.onAttempt(ctx, a)
+	}
+}
+
+// outSeen collects what one attempt's StreamOut observed.
+type outSeen struct {
+	status  int
+	rl      *RateLimit
+	started bool
+}
+
+// observeOut wraps o so the router learns whether the attempt produced
+// output and which quota headers the provider reported, without changing
+// what the caller's sinks receive.
+func observeOut(o *StreamOut) (*StreamOut, *outSeen) {
+	seen := &outSeen{}
+	wo := *o
+	origMeta := o.Meta
+	wo.Meta = func(status int, rl *RateLimit) {
+		seen.status = status
+		if rl != nil {
+			seen.rl = rl
+		}
+		if origMeta != nil {
+			origMeta(status, rl)
+		}
+	}
+	if o.TextSink != nil {
+		orig := o.TextSink
+		wo.TextSink = func(t string) { seen.started = true; orig(t) }
+	}
+	if o.ToolSink != nil {
+		orig := o.ToolSink
+		wo.ToolSink = func(tc ToolCall) { seen.started = true; orig(tc) }
+	}
+	return &wo, seen
 }
 
 // cooldownFor decides the cooldown duration based on the error, via the

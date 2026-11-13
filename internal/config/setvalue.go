@@ -14,6 +14,20 @@ import (
 // Everything else in the file — other keys, order, comments — is kept,
 // unlike re-marshalling the merged Config.
 func SetUserValue(path string, keys []string, value string) error {
+	return setUserNode(path, keys, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value})
+}
+
+// SetUserAny is SetUserValue for any YAML-encodable value (lists, maps,
+// numbers, bools). A nil value removes nothing; it writes null.
+func SetUserAny(path string, keys []string, value any) error {
+	var n yaml.Node
+	if err := n.Encode(value); err != nil {
+		return fmt.Errorf("config: encode %v: %w", keys, err)
+	}
+	return setUserNode(path, keys, &n)
+}
+
+func setUserNode(path string, keys []string, value *yaml.Node) error {
 	if len(keys) == 0 {
 		return fmt.Errorf("config: no key given")
 	}
@@ -51,7 +65,7 @@ func SetUserValue(path string, keys []string, value string) error {
 			node.Content = append(node.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: k}, child)
 		}
 		if last {
-			child.Kind, child.Tag, child.Value, child.Content = yaml.ScalarNode, "!!str", value, nil
+			*child = *value
 			break
 		}
 		if child.Kind != yaml.MappingNode {

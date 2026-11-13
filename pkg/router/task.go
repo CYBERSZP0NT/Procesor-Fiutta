@@ -266,6 +266,11 @@ func (r *Router) availFunc(ctx context.Context) agentic.AvailFunc {
 				return false, "model not pulled (ollama pull " + e.ModelID() + ")"
 			}
 		}
+		if g := core.CallOptionsFrom(ctx).Gate; g != nil {
+			if ok, why := g(ctx, name, e.ModelID()); !ok {
+				return false, why
+			}
+		}
 		if cd := r.core.Cooldown(); cd.Has(ctx, e.Model) {
 			return false, "cooldown " + cd.Remaining(ctx, e.Model).Round(1e9).String()
 		}
@@ -273,9 +278,9 @@ func (r *Router) availFunc(ctx context.Context) agentic.AvailFunc {
 	}
 }
 
-// dispatch routes req: through the task router when selector is a task
-// alias, through the route policy otherwise.
-func (r *Router) dispatch(ctx context.Context, selector string, req *core.ChatRequest, out *core.StreamOut, h *TaskHints, onDecision func(*TaskDecision)) (*core.RouteResult, error) {
+// dispatchOnce routes req once: through the task router when selector is a
+// task alias, through the route policy otherwise.
+func (r *Router) dispatchOnce(ctx context.Context, selector string, req *core.ChatRequest, out *core.StreamOut, h *TaskHints, onDecision func(*TaskDecision)) (*core.RouteResult, error) {
 	if !r.IsTaskAlias(selector) {
 		return r.core.Route(ctx, core.ModelSelector{Name: selector}, req, out)
 	}
