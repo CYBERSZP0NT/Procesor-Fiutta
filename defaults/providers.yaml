@@ -134,11 +134,12 @@ providers:
 
   - name: zai
     impl: openailike
-    base_url: "https://open.bigmodel.cn/api/paas/v4"
+    # international endpoint; z.ai keys also work on open.bigmodel.cn (CN)
+    base_url: "https://api.z.ai/api/paas/v4"
     key_env: "ZAI_API_KEY|ZHIPU_API_KEY"
     kind: keyed
     weight: 35
-    notes: "Z.ai (GLM) free tier: daily request caps (RPM-limited)."
+    notes: "Z.ai (GLM): prepaid balance; a new account with $0 gets error 1113 even on flash models."
 
   - name: openrouter
     impl: openailike
@@ -166,7 +167,8 @@ providers:
 
   - name: cohere
     impl: openailike
-    base_url: "https://api.cohere.com/v1"
+    # OpenAI-compatible endpoint (the native /v1 API answers 405 to /chat/completions)
+    base_url: "https://api.cohere.ai/compatibility/v1"
     key_env: "COHERE_API_KEY"
     kind: keyed
     weight: 30
@@ -174,7 +176,8 @@ providers:
 
   - name: cloudflare
     impl: openailike
-    base_url: "https://api.cloudflare.com"
+    # Workers AI OpenAI-compatible endpoint; the account ID is part of the path
+    base_url: "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1"
     key_env: "CLOUDFLARE_API_KEY"
     kind: keyed
     weight: 25
@@ -223,11 +226,11 @@ providers:
 
   - name: chutes
     impl: openailike
-    base_url: "https://api.chutes.ai/v1"
+    base_url: "https://llm.chutes.ai/v1"
     key_env: "CHUTES_API_KEY"
     kind: keyed
     weight: 20
-    notes: "2 free models via Chutes.ai."
+    notes: "Chutes.ai: needs a positive balance (fiat or TAO); $0 accounts get 'Quota exceeded'."
 
   - name: glhf
     impl: openailike
@@ -328,11 +331,11 @@ providers:
 
   - name: ollama_cloud
     impl: openailike
-    base_url: "https://ollama.com/api/v1"
+    base_url: "https://ollama.com/v1"
     key_env: "OLLAMA_API_KEY"
     kind: keyed
     weight: 30
-    notes: "Ollama Cloud: 17 free cloud models beyond local Ollama."
+    notes: "Ollama Cloud: 24 cloud models; needs usage credits or a plan (free accounts get 'Add usage credits')."
 
   - name: g4f
     impl: openailike

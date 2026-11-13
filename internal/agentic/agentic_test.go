@@ -138,7 +138,7 @@ func TestPickCheapestSufficientAndExplains(t *testing.T) {
 	for i, m := range d.Chain {
 		pos[m] = i
 	}
-	if pos["deepseek/deepseek-reasoner"] > pos["groq/llama-3.3-70b-versatile"] {
+	if pos["deepseek/deepseek-reasoner"] > pos["groq/openai/gpt-oss-120b"] {
 		t.Fatalf("tier-5 entry must precede tier-3 fallback: %v", d.Chain)
 	}
 	for _, c := range d.Cands {

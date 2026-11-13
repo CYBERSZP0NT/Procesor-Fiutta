@@ -69,7 +69,7 @@ curl -s http://localhost:8787/v1/chat/completions \
 from openai import OpenAI
 c = OpenAI(base_url="http://localhost:8787/v1", api_key="x")
 print(c.chat.completions.create(
-    model="auto",   # route alias — or "groq/llama-3.3-70b-versatile", a bare id, …
+    model="auto",   # route alias — or "groq/openai/gpt-oss-120b", a bare id, …
     messages=[{"role": "user", "content": "hi"}]).choices[0].message.content)
 ```
 

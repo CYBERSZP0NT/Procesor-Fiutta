@@ -61,14 +61,14 @@ catalog:
   # ── tier 1: labels, yes/no, short fields ─────────────────────────────────
   - {id: local-llama-1b,   model: "ollama/llama3.2:1b",         tier: 1, cost: 0, speed: 3, context: 4096,  tools: false, good_at: [classify, extract]}
   - {id: local-llama-3b,   model: "ollama/llama3.2:3b",         tier: 1, cost: 0, speed: 3, context: 4096,  tools: true,  good_at: [classify, extract, chat]}
-  - {id: groq-llama-8b,    model: "groq/llama-3.1-8b-instant",  tier: 1, cost: 1, speed: 3, context: 6000,  tools: true,  good_at: [classify, extract, chat]}
+  - {id: groq-oss-20b,     model: "groq/openai/gpt-oss-20b",    tier: 1, cost: 1, speed: 3, context: 6000,  tools: true,  good_at: [classify, extract, chat]}
   - {id: cerebras-llama-8b, model: "cerebras/llama3.1-8b",      tier: 1, cost: 1, speed: 3, context: 8000,  tools: true,  good_at: [classify, extract]}
   - {id: zen-llama-8b,     model: "opencode_zen/llama-3.1-8b",  tier: 1, cost: 0, speed: 2, context: 8000,  tools: false, good_at: [classify, chat]}
 
   # ── tier 2: chat, summaries, translation ─────────────────────────────────
   - {id: gemini-flash-lite, model: "google/gemini-flash-lite-latest", tier: 2, cost: 1, speed: 3, context: 1000000, tools: true, good_at: [summarize, extract, translate, chat, write]}
   - {id: mistral-small,    model: "mistral/mistral-small-latest", tier: 2, cost: 1, speed: 2, context: 32000, tools: true,  good_at: [translate, write, summarize]}
-  - {id: glm-4-flash,      model: "zai/glm-4-flash",            tier: 2, cost: 1, speed: 2, context: 128000, tools: true, good_at: [chat, translate, summarize]}
+  - {id: glm-5.3-flash,    model: "zai/glm-5.3-flash",          tier: 2, cost: 1, speed: 2, context: 128000, tools: true, good_at: [chat, translate, summarize]}
   - {id: g4f-4o-mini,      model: "g4f/gpt-4o-mini",            tier: 2, cost: 0, speed: 2, context: 16000, tools: false, good_at: [chat, summarize, translate]}
   - {id: pollinations-4o-mini, model: "pollinations/gpt-4o-mini", tier: 2, cost: 0, speed: 2, context: 8000, tools: false, good_at: [chat]}
   - {id: local-qwen-coder-7b, model: "ollama/qwen2.5-coder:7b", tier: 2, cost: 0, speed: 2, context: 8192, tools: true, good_at: [code],
@@ -76,7 +76,7 @@ catalog:
 
   # ── tier 3: writing, research, everyday code ─────────────────────────────
   - {id: gemini-flash,     model: "google/gemini-2.5-flash",    tier: 3, cost: 1, speed: 3, context: 1000000, tools: true, good_at: [summarize, research, write, chat, translate]}
-  - {id: groq-llama-70b,   model: "groq/llama-3.3-70b-versatile", tier: 3, cost: 1, speed: 3, context: 12000, tools: true, good_at: [chat, write, code]}
+  - {id: groq-oss-120b,    model: "groq/openai/gpt-oss-120b", tier: 3, cost: 1, speed: 3, context: 12000, tools: true, good_at: [chat, write, code]}
   - {id: or-qwen-coder-32b, model: "openrouter/qwen/qwen-2.5-coder-32b-instruct:free", tier: 3, cost: 0, speed: 2, context: 32000, tools: false, good_at: [code]}
   - {id: together-llama-70b, model: "together/meta-llama/Llama-3.3-70B-Instruct", tier: 3, cost: 2, speed: 2, context: 128000, tools: true, good_at: [write, research]}
   - {id: g4f-4o,           model: "g4f/gpt-4o",                 tier: 3, cost: 0, speed: 1, context: 16000, tools: false, good_at: [write, chat, research]}

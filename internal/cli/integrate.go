@@ -102,7 +102,7 @@ Examples:
   szmelc-router exec "summarize this" < notes.md
   git diff | szmelc-router ask -m code "review this diff" --json
   szmelc-router exec --profile auto --deadline 1h "…"      # never give up (within 1h)
-  szmelc-router exec --profile control -m groq/llama-3.3-70b-versatile "…"
+  szmelc-router exec --profile control -m groq/openai/gpt-oss-120b "…"
   answer=$(szmelc-router exec -q "one word: capital of France") || exit $?`,
 	RunE: runExec,
 }

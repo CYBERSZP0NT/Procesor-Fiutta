@@ -14,7 +14,7 @@ routes:
   # ── primary aliases ──────────────────────────────────────────────────────
   auto:
     - google/gemini-2.5-flash
-    - groq/llama-3.3-70b-versatile
+    - groq/openai/gpt-oss-120b
     - deepseek/deepseek-chat
     - openrouter/deepseek/deepseek-r1:free
     - together/meta-llama/Llama-3.3-70B-Instruct
@@ -25,15 +25,17 @@ routes:
   smart:
     - google/gemini-flash-latest
     - openrouter/meta-llama/llama-3.3-70b-instruct:free
-    - groq/llama-3.3-70b-versatile
+    - groq/openai/gpt-oss-120b
+    - cohere/command-a-03-2025
     - deepseek/deepseek-reasoner
     - g4f/o3-mini
     - pollinations/o3
     - ollama/llama3.2:3b
 
   fast:
-    - groq/llama-3.1-8b-instant
+    - groq/openai/gpt-oss-20b
     - google/gemini-flash-lite-latest
+    - cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast
     - cerebras/llama3.1-8b
     - opencode_zen/llama-3.1-8b
     - openrouter/meta-llama/llama-3.1-8b-instruct:free
@@ -42,7 +44,7 @@ routes:
     - ollama/llama3.2:1b
 
   code:
-    - groq/llama-3.3-70b-versatile
+    - groq/openai/gpt-oss-120b
     - openrouter/qwen/qwen-2.5-coder-32b-instruct:free
     - together/qwen/qwen-2.5-coder-32b-instruct
     - fireworks/qwen2-5-coder-32b-instruct
@@ -93,7 +95,7 @@ routes:
   google:
     - google/gemini-2.5-flash
   groq:
-    - groq/llama-3.3-70b-versatile
+    - groq/openai/gpt-oss-120b
   openrouter:
     - openrouter/deepseek/deepseek-r1:free
   deepseek:
@@ -117,9 +119,13 @@ routes:
   github_models:
     - github_models/gpt-4.1
   cohere:
-    - cohere/command-r
+    - cohere/command-a-03-2025
   zai:
-    - zai/glm-4-flash
+    - zai/glm-5.3-flash
+  cloudflare:
+    - cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast
+  ollama_cloud:
+    - ollama_cloud/gpt-oss:120b
   together:
     - together/meta-llama/Llama-3.3-70B-Instruct
   fireworks:
@@ -131,7 +137,7 @@ routes:
   siliconflow:
     - siliconflow/deepseek-ai/DeepSeek-V3
   chutes:
-    - chutes/gpt-4.1-mini
+    - chutes/zai-org/GLM-5.3
   glhf:
     - glhf/gpt-4.1-mini
   nebius:

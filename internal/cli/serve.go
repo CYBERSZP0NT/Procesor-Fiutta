@@ -34,7 +34,7 @@ var serveCmd = &cobra.Command{
 Point any OpenAI SDK at it:
   base_url   = http://host:port/v1
   api_key    = <server key, or anything if auth.mode = none>
-  model      = "auto" | "free" | "groq/llama-3.3-70b-versatile" | …
+  model      = "auto" | "free" | "groq/openai/gpt-oss-120b" | …
 
 Endpoints:
   POST /v1/chat/completions   streaming + non-streaming, exact OpenAI shapes
