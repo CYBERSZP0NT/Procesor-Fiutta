@@ -21,6 +21,12 @@ loosely follows Keep a Changelog.
   `FREELLM_LIVE` and `FREELLM_LIVE_CACHE`. `chat` and `exec` default to
   `live` while it is the live default. Guide:
   [docs/freellmapi-live.md](docs/freellmapi-live.md).
+- **MIT license, Arch `PKGBUILD` and Nix flake.**
+  - `PKGBUILD` (`szmelc-router-git`) builds a PIE binary, runs `go test`, and
+    installs the zsh/bash/fish completions, the license, the docs and the
+    `freellm-router` symlink.
+  - `flake.nix` provides `packages.default`, `apps.default` (`nix run`) and a
+    `devShell`.
 
 ### Fixed
 - **freellmapi sidecar provider**: the default URL is now
