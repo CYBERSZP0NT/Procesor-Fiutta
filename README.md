@@ -1,5 +1,10 @@
 # freellm-router
 
+[![CI](https://github.com/CYBERSZP0NT/Procesor-Fiutta/actions/workflows/ci.yml/badge.svg)](https://github.com/CYBERSZP0NT/Procesor-Fiutta/actions/workflows/ci.yml)
+![Go](https://img.shields.io/github/go-mod/go-version/CYBERSZP0NT/Procesor-Fiutta)
+![OpenAI-compatible](https://img.shields.io/badge/API-OpenAI--compatible-412991)
+![Task router](https://img.shields.io/badge/routing-agentic%20task%20router-2ea44f)
+
 **One static Go binary** in front of *all* your free and low-cost LLM
 capacity: vendor free tiers (Google, Groq, Cerebras, Together, DeepSeek, …),
 keyless endpoints (pollinations, g4f, AI Horde, …), local **Ollama**, sidecars
