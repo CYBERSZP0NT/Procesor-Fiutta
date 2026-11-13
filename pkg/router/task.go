@@ -76,11 +76,11 @@ func newTaskRouter(user *agentic.Spec, kinds map[string]string, routes map[strin
 // ("agent", "task", "agent:code:4", …). A configured route with the same
 // name wins: routes are explicit, aliases are a convenience.
 func (r *Router) IsTaskAlias(selector string) bool {
-	if r.task == nil || !r.task.spec.IsEnabled() || r.task.routes[strings.ToLower(selector)] {
+	if r.task == nil || !r.task.spec.IsEnabled() {
 		return false
 	}
-	_, _, ok := agentic.SplitAlias(selector, r.task.spec.AliasNames())
-	return ok
+	alias, _, ok := agentic.SplitAlias(selector, r.task.spec.AliasNames())
+	return ok && !r.task.routes[strings.ToLower(alias)]
 }
 
 // TaskAliases returns the model names that trigger task routing (empty

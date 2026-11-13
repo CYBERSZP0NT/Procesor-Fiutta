@@ -131,7 +131,8 @@ agentic:
 | rule effects | `min_tier`, `max_tier`, `prefer` (entry ids), `only_where` (kinds) |
 
 If a configured **route** has the same name as an alias (`routes: {agent: […]}`),
-the route wins. Routes are explicit configuration, while aliases are a
+the route wins, and the alias's suffixed forms (`agent:code:4`) are no longer
+task-routed either. Routes are explicit configuration, while aliases are a
 convenience.
 
 Tiers, costs and context sizes are judgment calls, not measurements. Edit them

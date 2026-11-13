@@ -33,6 +33,10 @@ Changelog.
   sequential HTTP calls) to build a map the default policy never reads.
   It is now only built for policies that implement `KnownModelsPolicy`.
 - `go.mod`: cobra marked as a direct dependency.
+- Plugin tests ran a committed Linux `bin/go-example` binary (`exec format
+  error` on macOS CI); they now build the plugin for the host platform.
+- CORS: `X-Freellm-Task` allowed as a request header; routing headers
+  exposed to browser clients.
 
 ## [v1.0.0-rc1] — 2026-11-02
 

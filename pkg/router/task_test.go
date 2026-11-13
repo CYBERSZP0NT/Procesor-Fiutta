@@ -144,7 +144,7 @@ func TestTaskRouterStreamIsNotEscalated(t *testing.T) {
 func TestConfiguredRouteWinsOverTaskAlias(t *testing.T) {
 	srv, seen := fakeUpstream(t)
 	r := taskRouter(t, srv.URL, map[string][]string{"agent": {"fake/mid"}})
-	if r.IsTaskAlias("agent") || !r.IsTaskAlias("task") {
+	if r.IsTaskAlias("agent") || r.IsTaskAlias("agent:code:4") || !r.IsTaskAlias("task") {
 		t.Fatal("a route named agent must shadow the alias, task must stay")
 	}
 	via, _, err := r.Route(context.Background(), "agent", []router.Message{{Role: "user", Content: "hi"}}, "", nil)

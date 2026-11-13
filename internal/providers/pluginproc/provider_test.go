@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -36,26 +37,40 @@ func newTestPluginProvider(cmd []string, name string) *Provider {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: find the go-example binary (built in CI or by the developer)
+// Helper: build the go-example plugin for THIS platform (once per run).
+// A prebuilt binary from the repo would be the wrong OS/arch on macOS CI.
 // ---------------------------------------------------------------------------
+
+var (
+	goExampleOnce sync.Once
+	goExampleBin  string
+	goExampleErr  error
+)
 
 func findGoExample(t *testing.T) string {
 	t.Helper()
 	if path := os.Getenv("GO_EXAMPLE_BIN"); path != "" {
 		return path
 	}
-	// Try relative locations.
-	for _, p := range []string{
-		"../../bin/go-example",
-		"../../../bin/go-example",
-		filepath.Join("..", "..", "bin", "go-example"),
-	} {
-		if _, err := os.Stat(p); err == nil {
-			return p
+	goExampleOnce.Do(func() {
+		dir, err := os.MkdirTemp("", "go-example-*")
+		if err != nil {
+			goExampleErr = err
+			return
 		}
+		out := filepath.Join(dir, "go-example")
+		cmd := exec.Command("go", "build", "-o", out, ".")
+		cmd.Dir = filepath.Join("..", "..", "..", "plugins", "go-example")
+		if b, err := cmd.CombinedOutput(); err != nil {
+			goExampleErr = fmt.Errorf("%v: %s", err, b)
+			return
+		}
+		goExampleBin = out
+	})
+	if goExampleErr != nil {
+		t.Logf("go-example plugin could not be built: %v", goExampleErr)
 	}
-	t.Log("go-example binary not found; build with: cd plugins/go-example && go build -o ../../bin/go-example .")
-	return ""
+	return goExampleBin
 }
 
 func findPythonPlugin() (string, bool) {
