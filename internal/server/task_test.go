@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/agentic"
-	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/agentic"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
 )
 
 // newTaskTestServer serves the router (3-entry task catalog over one fake

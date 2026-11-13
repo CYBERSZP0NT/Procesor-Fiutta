@@ -10,8 +10,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/silverx/szmelc-router/internal/ledger"
-	"github.com/silverx/szmelc-router/internal/usage"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/ledger"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/usage"
 )
 
 var (

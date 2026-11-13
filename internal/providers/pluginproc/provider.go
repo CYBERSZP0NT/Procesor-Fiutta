@@ -27,8 +27,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/config"
-	"github.com/silverx/szmelc-router/internal/core"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/core"
 )
 
 // ---------------------------------------------------------------------------

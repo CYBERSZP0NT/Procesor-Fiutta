@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/szmelc-router/internal/agentic"
-	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/agentic"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
 )
 
 var modeCmd = &cobra.Command{

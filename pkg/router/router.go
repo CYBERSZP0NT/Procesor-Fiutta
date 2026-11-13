@@ -10,7 +10,7 @@
 //
 // # Example
 //
-//	import "github.com/silverx/szmelc-router/pkg/router"
+//	import "github.com/CYBERSZP0NT/szmelc-router/pkg/router"
 //
 //	r, _ := router.New(router.Config{
 //	    Providers: []router.ProviderConfig{
@@ -35,13 +35,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/config"
-	"github.com/silverx/szmelc-router/internal/control"
-	"github.com/silverx/szmelc-router/internal/core"
-	g4fbridge "github.com/silverx/szmelc-router/internal/providers/g4fbridge"
-	"github.com/silverx/szmelc-router/internal/providers/ollama"
-	openailike "github.com/silverx/szmelc-router/internal/providers/openailike"
-	pluginproc "github.com/silverx/szmelc-router/internal/providers/pluginproc"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/control"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/core"
+	g4fbridge "github.com/CYBERSZP0NT/szmelc-router/internal/providers/g4fbridge"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/providers/ollama"
+	openailike "github.com/CYBERSZP0NT/szmelc-router/internal/providers/openailike"
+	pluginproc "github.com/CYBERSZP0NT/szmelc-router/internal/providers/pluginproc"
 )
 
 // ProviderConfig is the minimum info needed to create a provider instance.

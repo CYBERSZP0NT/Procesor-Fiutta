@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/silverx/szmelc-router/pkg/router"
+	"github.com/CYBERSZP0NT/szmelc-router/pkg/router"
 )
 
 func main() {

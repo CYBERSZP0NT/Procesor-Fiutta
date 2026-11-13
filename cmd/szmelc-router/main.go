@@ -5,7 +5,7 @@ package main
 import (
 	"os"
 
-	"github.com/silverx/szmelc-router/internal/cli"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/cli"
 )
 
 // Build info, set by -ldflags (see Makefile).

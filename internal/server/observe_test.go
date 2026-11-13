@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/config"
-	"github.com/silverx/szmelc-router/internal/ledger"
-	"github.com/silverx/szmelc-router/internal/usage"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/ledger"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/usage"
 )
 
 func newObsServer(t *testing.T) (string, string) {

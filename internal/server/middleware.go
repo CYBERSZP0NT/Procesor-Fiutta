@@ -9,14 +9,14 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
-	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/ledger"
 	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
 )
 
 // Middleware wraps an http.Handler. The pipeline is an ordered list;

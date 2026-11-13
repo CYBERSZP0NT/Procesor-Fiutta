@@ -10,9 +10,9 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/silverx/szmelc-router/internal/appdir"
-	"github.com/silverx/szmelc-router/internal/config"
-	"github.com/silverx/szmelc-router/pkg/router"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/appdir"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/pkg/router"
 )
 
 var providersCmd = &cobra.Command{

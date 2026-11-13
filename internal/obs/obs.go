@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/config"
-	"github.com/silverx/szmelc-router/internal/control"
-	"github.com/silverx/szmelc-router/internal/core"
-	"github.com/silverx/szmelc-router/internal/ledger"
-	"github.com/silverx/szmelc-router/internal/usage"
-	"github.com/silverx/szmelc-router/pkg/router"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/control"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/core"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/ledger"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/usage"
+	"github.com/CYBERSZP0NT/szmelc-router/pkg/router"
 )
 
 // Runtime is one process's ledger + quota tracker + controller.

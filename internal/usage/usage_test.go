@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/silverx/szmelc-router/internal/config"
-	"github.com/silverx/szmelc-router/internal/core"
-	"github.com/silverx/szmelc-router/internal/ledger"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/core"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/ledger"
 )
 
 func i64(v int64) *int64 { return &v }

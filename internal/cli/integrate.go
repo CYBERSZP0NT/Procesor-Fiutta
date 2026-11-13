@@ -16,11 +16,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/silverx/szmelc-router/internal/config"
-	"github.com/silverx/szmelc-router/internal/control"
-	"github.com/silverx/szmelc-router/internal/ledger"
-	"github.com/silverx/szmelc-router/internal/server"
-	"github.com/silverx/szmelc-router/pkg/router"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/config"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/control"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/ledger"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/server"
+	"github.com/CYBERSZP0NT/szmelc-router/pkg/router"
 )
 
 // Exit codes of `exec` (stable: scripts branch on them).

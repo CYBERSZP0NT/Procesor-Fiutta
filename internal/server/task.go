@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/silverx/szmelc-router/pkg/router"
+	"github.com/CYBERSZP0NT/szmelc-router/pkg/router"
 )
 
 // handleRouteCatalog serves GET /v1/route: the effective task-router spec

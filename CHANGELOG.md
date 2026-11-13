@@ -6,8 +6,12 @@ loosely follows Keep a Changelog.
 ## [Unreleased]
 
 ### Changed
+- **Repository renamed** from `CYBERSZP0NT/Procesor-Fiutta` to
+  `CYBERSZP0NT/szmelc-router` (GitHub redirects the old URLs). The Go module
+  path now matches it, so `go install
+  github.com/CYBERSZP0NT/szmelc-router/cmd/szmelc-router@latest` works.
 - **Renamed to szmelc-router.** The binary, `cmd/szmelc-router`, the Go
-  module (`github.com/silverx/szmelc-router`), Docker image and compose
+  module (`github.com/CYBERSZP0NT/szmelc-router`), Docker image and compose
   project, `owned_by`/`service` fields and the User-Agent now carry the new
   name. Per-user files move to `~/.config/szmelc/`, `$XDG_DATA_HOME/szmelc/`
   and the user cache dir's `szmelc/`; existing `freellm/` files are still

@@ -133,7 +133,7 @@ while True:
         break
 ```
 
-Go plugins: import `github.com/silverx/szmelc-router/pkg/pluginhost` — one
+Go plugins: import `github.com/CYBERSZP0NT/szmelc-router/pkg/pluginhost` — one
 import, register `Models` / `Available` / `Stream`, call `Run()` (see
 `plugins/go-example`).
 

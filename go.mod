@@ -1,4 +1,4 @@
-module github.com/silverx/szmelc-router
+module github.com/CYBERSZP0NT/szmelc-router
 
 go 1.27.1
 
