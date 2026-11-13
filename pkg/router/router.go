@@ -460,17 +460,35 @@ func (r *Router) RouteRaw(
 	opts *RouteOpts,
 	s Sinks,
 ) (via string, done *Done, err error) {
+	msgs := make([]core.Message, 0, len(messages))
+	for _, m := range messages {
+		msgs = append(msgs, core.Message{
+			Role:    core.Role(m.Role),
+			Content: m.Content,
+		})
+	}
+	return r.RouteRawCore(ctx, selector, msgs, model, stream, opts, s)
+}
+
+// RouteRawCore is RouteRaw with full core.Message control: tool-call history
+// (RoleTool / assistant ToolCalls) passes through intact instead of being
+// flattened to role+content strings. The Anthropic-compatible /v1/messages
+// handler uses this so multi-turn tool use survives translation.
+func (r *Router) RouteRawCore(
+	ctx context.Context,
+	selector string,
+	messages []core.Message,
+	model string,
+	stream bool,
+	opts *RouteOpts,
+	s Sinks,
+) (via string, done *Done, err error) {
 	req := &core.ChatRequest{
 		Model:    model,
 		Stream:   stream,
 		Messages: make([]core.Message, 0, len(messages)),
 	}
-	for _, m := range messages {
-		req.Messages = append(req.Messages, core.Message{
-			Role:    core.Role(m.Role),
-			Content: m.Content,
-		})
-	}
+	req.Messages = append(req.Messages, messages...)
 	if opts != nil {
 		if opts.MaxTokens != nil {
 			req.MaxTokens = *opts.MaxTokens

@@ -123,6 +123,8 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /v1/chat/completions", s.handleChat)
 	mux.HandleFunc("POST /chat/completions", s.handleChat)
+	mux.HandleFunc("POST /v1/messages", s.handleMessages)
+	mux.HandleFunc("POST /messages", s.handleMessages)
 	mux.HandleFunc("GET /v1/models", s.handleModels)
 	mux.HandleFunc("GET /models", s.handleModels)
 	mux.HandleFunc("GET /v1/health", s.handleHealth)
