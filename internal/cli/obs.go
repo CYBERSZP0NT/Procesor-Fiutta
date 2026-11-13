@@ -188,6 +188,8 @@ func humanDur(d time.Duration) string {
 	switch {
 	case d < 0:
 		return "-" + humanDur(-d)
+	case d == 0:
+		return "0s"
 	case d < time.Second:
 		return fmt.Sprintf("%dms", d.Milliseconds())
 	case d < time.Minute:
@@ -204,6 +206,9 @@ func humanDur(d time.Duration) string {
 func ago(t time.Time) string {
 	if t.IsZero() {
 		return "-"
+	}
+	if time.Since(t) < time.Second {
+		return "just now"
 	}
 	return humanDur(time.Since(t).Round(time.Second)) + " ago"
 }

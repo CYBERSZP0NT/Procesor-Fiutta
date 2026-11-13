@@ -6,6 +6,7 @@ package obs
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 
@@ -216,6 +217,24 @@ func describe(s control.Settings) string {
 	b("fallback", s.Fallback)
 	b("forever", s.Forever)
 	b("enforce_limits", s.EnforceLimits)
+	if s.MaxAttempts > 0 {
+		parts = append(parts, "max_attempts="+strconv.Itoa(s.MaxAttempts))
+	}
+	if s.MaxWaitSec > 0 {
+		parts = append(parts, "max_wait="+strconv.Itoa(s.MaxWaitSec)+"s")
+	}
+	if s.Escalate != nil {
+		parts = append(parts, "escalate="+*s.Escalate)
+	}
+	if len(s.Hooks.PreCall) > 0 {
+		parts = append(parts, "pre_call="+strings.Join(s.Hooks.PreCall, " "))
+	}
+	if len(s.Hooks.PostCall) > 0 {
+		parts = append(parts, "post_call="+strings.Join(s.Hooks.PostCall, " "))
+	}
+	if len(parts) == 0 {
+		return "defaults"
+	}
 	return strings.Join(parts, " ")
 }
 

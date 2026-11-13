@@ -58,7 +58,7 @@ func Execute(args []string) int {
 	rootCmd.SetArgs(args)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
-		return 1
+		return exitCodeOf(err)
 	}
 	return 0
 }
@@ -74,7 +74,7 @@ func SetVersionInfo(vert, cmt, dt string) {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&pCfgPath, "config", "", "path to config file (default: $FREELLM_CONFIG or ~/.config/freellm/config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&pProvider, "provider", "", "default provider filter")
-	rootCmd.PersistentFlags().StringVar(&pModel, "model", "", "default model / route alias")
+	rootCmd.PersistentFlags().StringVarP(&pModel, "model", "m", "", "default model / route alias")
 	rootCmd.PersistentFlags().IntVar(&pTimeoutSec, "timeout", 120, "per-request timeout (seconds)")
 	rootCmd.PersistentFlags().BoolVar(&pJSON, "json", false, "output JSON instead of human-readable text")
 	rootCmd.PersistentFlags().StringVar(&pURL, "url", "", "running server to talk to (default: $FREELLM_URL or the configured host:port)")
