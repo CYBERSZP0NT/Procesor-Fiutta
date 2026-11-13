@@ -146,7 +146,19 @@ server: {host: 0.0.0.0, port: 8787, auth: {mode: none|bearer, keys: []}}
 policies: {cooldown_short_s: 30, cooldown_long_s: 3600, retry_same: false, max_chain_attempts: 6}
 catalog: {sources: [providers, embedded, {remote: https://freellmapi.co/models}]}
 logging: {level: info, format: json|pretty, file: ""}
+live: {enabled: auto|offline|off, key: "", max_models: 300, keep_mode: false}
 ```
+
+**FreeLLMAPI live** (`internal/live`, applied last in `config.Load`): a
+FreeLLMAPI key in `FREELLM_API_KEY` is classified by prefix. A `fla_` license
+is checked against `api.freellmapi.co/v1/license/check`. A `freellmapi-`
+sidecar key is checked against `$FREELLMAPI_URL/v1/models`. Never send one to
+the other's host, and never call `/v1/license/activate`. When a key works, the
+Ed25519-verified live catalog becomes `agentic` entries (`live:<platform>/<model>`)
+and, unless a mode is set, `agentic.mode` becomes `live` (by richness:
+`agentic.Richer`). With no key, there is no network or disk I/O. A network
+error never fails Load. Under `go test`, it stays off unless `FREELLM_LIVE` is
+set. Guide: `docs/freellmapi-live.md`.
 
 ---
 

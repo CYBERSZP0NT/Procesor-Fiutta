@@ -6,6 +6,10 @@
 ![Task router](https://img.shields.io/badge/routing-agentic%20task%20router-2ea44f)
 ![TUI](https://img.shields.io/badge/TUI-interactive-A78BFA)
 ![Control](https://img.shields.io/badge/control-%E2%88%9E%20auto%20%E2%87%84%20%E2%9B%AD%20control-orange)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+![FreeLLMAPI live](https://img.shields.io/badge/FreeLLMAPI-live-0ea5e9)
+![Arch](https://img.shields.io/badge/Arch-PKGBUILD-1793d1?logo=archlinux&logoColor=white)
+![Nix](https://img.shields.io/badge/Nix-flake-5277c3?logo=nixos&logoColor=white)
 
 **One static Go binary** in front of *all* your free and low-cost LLM
 capacity: vendor free tiers (Google, Groq, Cerebras, Together, DeepSeek, …),
@@ -36,6 +40,8 @@ make install                                   # go install
 #   or: go install github.com/CYBERSZP0NT/szmelc-router/cmd/szmelc-router@latest
 #   or: docker compose -f docker/docker-compose.yml up --build
 #   or: download a static binary from a release tag (dist/ layout)
+#   or: makepkg -si                            # Arch (PKGBUILD: binary, zsh/bash/fish completions, docs)
+#   or: nix run github:CYBERSZP0NT/szmelc-router   # Nix flake (also: nix build, nix develop)
 
 # 2) (optional) put your free-tier keys somewhere — all optional
 cp .env.example .env                           # fill in the ones you have
@@ -113,6 +119,24 @@ You can force the classification with `agent:code:4`, the `X-Freellm-Task`
 header or `metadata.task`. Tiers, rules and the catalog are data
 ([`defaults/agentic.yaml`](defaults/agentic.yaml) plus an `agentic:` section
 in your config). Full guide: [docs/agentic.md](docs/agentic.md).
+
+## FreeLLMAPI live — `model: "live"`, by richness
+
+Have a [FreeLLMAPI](https://github.com/tashfeenahmed/freellmapi) Premium key
+(`fla_…`, the "live" plan)? Export it, and the router checks it, pulls the
+signed live catalog (Ed25519-verified) and makes **`live`** the default mode:
+all in, richest first (size class, then context, then free daily quota).
+Without a key nothing changes and no request is made.
+
+```bash
+export FREELLM_API_KEY=fla_…
+szmelc-router live          # ✓ license active, live catalog v…, N entries, mode Live
+szmelc-router chat "hi"     # no --model → "live"
+```
+
+It works with a self-hosted FreeLLMAPI sidecar too (`freellmapi-…` key). An
+explicit `agentic.mode` or `FREELLM_TASK_MODE` always wins. Guide:
+[docs/freellmapi-live.md](docs/freellmapi-live.md).
 
 ## Observability, control & integrations
 
@@ -223,3 +247,7 @@ This codebase is v1.0.0-rc1: steps 1–8 of the plan in AGENTS.md are complete
 (skeleton, provider+router, CLI, server, plugins, catalog, resilience,
 distribution). See [CHANGELOG.md](CHANGELOG.md) and
 [docs/PROGRESS.md](docs/PROGRESS.md) for the step log.
+
+## License
+
+[MIT](LICENSE)

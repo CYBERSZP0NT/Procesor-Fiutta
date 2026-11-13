@@ -39,6 +39,8 @@ func expandString(s string) string {
 // expandConfig walks every string field in the Config struct tree and
 // applies expandString in place (via reassignment).
 func expandConfig(c *Config) *Config {
+	c.Live.Key = expandString(c.Live.Key)
+	c.Live.CatalogURL = expandString(c.Live.CatalogURL)
 	// Routes: map[string][]string
 	for name, chain := range c.Routes {
 		for i, e := range chain {

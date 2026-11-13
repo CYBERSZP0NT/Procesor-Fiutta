@@ -48,7 +48,7 @@ func init() {
 	chatCmd.Flags().IntVar(&chatOptsVar.maxTokens, "max-tokens", 0, "max tokens to generate (0 = upstream default)")
 	chatCmd.Flags().Float64Var(&chatOptsVar.temperature, "temperature", 0, "sampling temperature (0.0-2.0, 0 = upstream default)")
 	chatCmd.Flags().BoolVar(&chatOptsVar.showVia, "via", false, "print the routing path used after the response")
-	chatCmd.Flags().StringVar(&chatOptsVar.mode, "mode", "", "task-router mode for this call (rozklad-jazdy | jako-tako); implies --model agent when no model is given")
+	chatCmd.Flags().StringVar(&chatOptsVar.mode, "mode", "", "task-router mode for this call (rozklad-jazdy | jako-tako | live); implies --model agent when no model is given")
 }
 
 func runChat(cmd *cobra.Command, args []string) error {
@@ -74,7 +74,7 @@ func runChat(cmd *cobra.Command, args []string) error {
 
 	selector := pModel
 	if selector == "" {
-		selector = "auto"
+		selector = defaultSelector(cfg)
 		if chatOptsVar.mode != "" {
 			selector = "agent"
 		}

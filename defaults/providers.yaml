@@ -351,8 +351,9 @@ providers:
 
   - name: freellmapi
     impl: openailike
-    base_url: "${FREELLMAPI_URL:-http://localhost:5174}"
+    base_url: "${FREELLMAPI_URL:-http://localhost:3001}/v1"
+    key_env: "FREELLMAPI_API_KEY|FREELLMAPI_KEY"   # unified key from its dashboard (freellmapi-…)
     kind: sidecar
     allow_insecure_upstream: true  # local sidecar: loopback base_url is the point
     weight: 50
-    notes: "freellmapi sidecar (34 free providers, 635 free endpoints)."
+    notes: "FreeLLMAPI sidecar (87 providers, 1,313 free endpoints). Models: auto, auto:smart, auto:fast, or any catalog id. A fla_ license key is not this key — see `szmelc-router live`."

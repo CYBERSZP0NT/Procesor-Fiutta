@@ -27,3 +27,10 @@ dist/
 
 # Agent worktrees
 .claude/worktrees/
+
+# Packaging (makepkg, nix)
+/src/
+/pkg/
+*.pkg.tar.*
+/result
+/result-*

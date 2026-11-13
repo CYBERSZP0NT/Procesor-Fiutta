@@ -150,7 +150,7 @@ func TestRoutePreviewAndCatalog(t *testing.T) {
 	if err := json.NewDecoder(r.Body).Decode(&cat); err != nil {
 		t.Fatal(err)
 	}
-	if len(cat.Catalog) != 3 || cat.Catalog[0].Available != "ok" || cat.Catalog[0].Where != "keyless" || len(cat.Aliases) != 2 {
+	if len(cat.Catalog) != 3 || cat.Catalog[0].Available != "ok" || cat.Catalog[0].Where != "keyless" || len(cat.Aliases) != 3 {
 		t.Fatalf("catalog %+v", cat)
 	}
 }

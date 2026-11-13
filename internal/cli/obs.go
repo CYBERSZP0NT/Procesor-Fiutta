@@ -73,7 +73,7 @@ type apiClient struct {
 }
 
 func newAPIClient(cfg *config.Config) *apiClient {
-	key := os.Getenv("FREELLM_API_KEY")
+	key := ownAPIKey()
 	if key == "" && cfg != nil && len(cfg.Server.Auth.Keys) > 0 {
 		key = cfg.Server.Auth.Keys[0]
 	}

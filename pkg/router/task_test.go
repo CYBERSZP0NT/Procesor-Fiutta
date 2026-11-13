@@ -158,7 +158,7 @@ func TestConfiguredRouteWinsOverTaskAlias(t *testing.T) {
 	if err != nil || via != "fake/mid" || seen()[0] != "mid" {
 		t.Fatalf("via %s err %v upstream %v", via, err, seen())
 	}
-	if got := r.TaskAliases(); len(got) != 1 || got[0] != "task" {
+	if got := r.TaskAliases(); len(got) != 2 || got[0] != "task" || got[1] != "live" {
 		t.Fatalf("aliases %v", got)
 	}
 }

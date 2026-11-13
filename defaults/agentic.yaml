@@ -24,11 +24,16 @@
 #                  model first, biggest context, cost and tier caps ignored
 #   jako-tako      "Jako Tako" — just enough: cheapest model that reaches
 #                  the required tier, stronger ones only as escalation
+#   live           "Live" — by richness: all in, ranked by the signed
+#                  FreeLLMAPI live catalog (size class, context, free quota).
+#                  Becomes the default when a working FreeLLMAPI key is found
+#                  (FREELLM_API_KEY) and no mode is set in your config/env.
 # Per request: model "agent:jako-tako", header X-Freellm-Task-Mode,
 # metadata.task_mode. Runtime: PUT /v1/route/mode. CLI: szmelc-router mode.
+# Model "live" is "agent:live".
 mode: rozklad-jazdy
 
-aliases: [agent, task]
+aliases: [agent, task, live]
 below_tier_fallback: true   # weaker models as a last resort instead of a 502
 escalations: 1              # empty/filtered non-stream answer → retry (one tier up in Jako Tako, next strongest in [Rozkład Jazdy])
 

@@ -7,6 +7,19 @@ non-streaming), and the `model` field accepts a route alias (`auto`, `free`,
 
 Base URL used below: `http://localhost:8787/v1`.
 
+## FreeLLMAPI (live catalog and sidecar)
+
+```bash
+export FREELLM_API_KEY=fla_…                 # Premium "live" license: the router checks it and defaults to mode live
+szmelc-router live                           # what was found, license, catalog version, mode
+# optional sidecar (your own FreeLLMAPI server)
+export FREELLMAPI_URL=http://localhost:3001  # without /v1
+export FREELLMAPI_API_KEY=freellmapi-…       # unified key from its dashboard
+```
+
+Ask for it from any client with `"model": "live"`. Details:
+[freellmapi-live.md](freellmapi-live.md).
+
 ## Any script, harness or agent (no code changes)
 
 ```bash

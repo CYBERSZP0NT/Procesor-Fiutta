@@ -100,7 +100,7 @@ func (r *Router) TaskMode() string {
 func (r *Router) SetTaskMode(mode string) (string, error) {
 	id, ok := agentic.NormalizeMode(mode)
 	if !ok {
-		return "", fmt.Errorf("unknown task-router mode %q (rozklad-jazdy | jako-tako)", mode)
+		return "", fmt.Errorf("unknown task-router mode %q (%s)", mode, agentic.ModeIDs())
 	}
 	if r.task == nil {
 		return "", fmt.Errorf("agentic task router is disabled")
@@ -211,7 +211,10 @@ func (r *Router) taskNeed(selector string, msgs []core.Message, tools bool, h *T
 			n.Mode = m
 		}
 	}
-	if _, suffix, ok := agentic.SplitAlias(selector, r.task.spec.AliasNames()); ok {
+	if alias, suffix, ok := agentic.SplitAlias(selector, r.task.spec.AliasNames()); ok {
+		if strings.EqualFold(alias, agentic.ModeLive) {
+			n.Mode = agentic.ModeLive // model "live" = "agent:live"
+		}
 		n.Apply(agentic.ParseOverride(suffix), "model")
 	}
 	if n.Mode == "" {

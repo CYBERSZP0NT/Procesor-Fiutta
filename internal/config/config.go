@@ -21,6 +21,7 @@ import (
 	"github.com/CYBERSZP0NT/szmelc-router/internal/agentic"
 	"github.com/CYBERSZP0NT/szmelc-router/internal/appdir"
 	"github.com/CYBERSZP0NT/szmelc-router/internal/control"
+	"github.com/CYBERSZP0NT/szmelc-router/internal/live"
 	"gopkg.in/yaml.v3"
 )
 
@@ -48,6 +49,12 @@ type Config struct {
 	Ledger LedgerConfig `yaml:"ledger,omitempty"`
 	// Control holds the operator settings (profile, fallback, hooks, …).
 	Control control.Settings `yaml:"control,omitempty"`
+	// Live configures FreeLLMAPI live (a working FreeLLMAPI key makes
+	// "live" — routing by richness — the default task mode).
+	Live LiveConfig `yaml:"live,omitempty"`
+	// LiveState is what Load found out about FreeLLMAPI live (nil when
+	// it was not checked). Never written to a config file.
+	LiveState *live.State `yaml:"-" json:"-"`
 }
 
 // Limits is a provider quota as the user declares it. Zero = unknown.
@@ -208,9 +215,15 @@ func Load(explicitPath string) (*Config, error) {
 	if v := os.Getenv("FREELLM_TASK_MODE"); v != "" {
 		base.Agentic.Mode = v
 	}
+	// A mode named in the config file, by `szmelc-router mode` or in
+	// FREELLM_TASK_MODE beats the live default.
+	explicitMode := base.Agentic.Mode != ""
 
 	// Expand ${VAR} and ${VAR:-default} in all string fields
 	base = expandConfig(base)
+
+	// Layer 4: FreeLLMAPI live (a working key → mode "live" by default)
+	applyLive(base, explicitMode)
 
 	if err := base.Validate(); err != nil {
 		return nil, err
@@ -432,6 +445,7 @@ func merge(base, overlay *Config) *Config {
 		out.Ledger.Content = overlay.Ledger.Content
 	}
 	out.Control = base.Control.Merge(overlay.Control)
+	out.Live = mergeLive(base.Live, overlay.Live)
 
 	return &out
 }

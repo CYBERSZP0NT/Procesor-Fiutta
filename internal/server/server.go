@@ -135,6 +135,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/route/mode", s.handleMode)
 	mux.HandleFunc("PUT /v1/route/mode", s.handleMode)
 	mux.HandleFunc("POST /v1/route/mode", s.handleMode)
+	mux.HandleFunc("GET /v1/live", s.handleLive)
 	mux.HandleFunc("GET /v1/metrics", s.handleMetrics)
 	mux.HandleFunc("GET /metrics", s.handleMetrics)
 	mux.HandleFunc("GET /{$}", s.handleRoot)
@@ -238,6 +239,11 @@ func (s *Server) Run(ctx context.Context, o ServeOpts) error {
 	}()
 
 	s.logger.Info("server started", "addr", addr, "tls", cert != "" && key != "")
+	if st := s.cfg.LiveState; st != nil && st.Active {
+		s.logger.Info("freellmapi live active", "reason", st.Reason, "entries", st.Entries, "mode", s.router.TaskMode())
+	} else if st != nil && len(st.Keys) > 0 {
+		s.logger.Warn("freellmapi key found but live is off", "reason", st.Reason)
+	}
 
 	for {
 		select {

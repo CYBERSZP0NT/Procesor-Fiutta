@@ -16,14 +16,18 @@ itself, so you never need to guess why a request went where it did.
 |---|---|---|
 | **[Rozkład Jazdy]** (default) | `rozklad-jazdy` | All in, whatever the task. The strongest available model goes first; among equals, the biggest context. Cost, speed and the tier caps of rules (`max_tier`, `min_tier`) are ignored, and every eligible model is in the chain, strongest first. |
 | **Jako Tako** | `jako-tako` | Just enough. The cheapest model that reaches the tier the task needs goes first, stronger ones follow as escalation, weaker ones as a best effort. |
+| **Live** (default with a working FreeLLMAPI key) | `live` | By richness. All in like [Rozkład Jazdy], ranked by the signed FreeLLMAPI live catalog: size class (Frontier > Large > Medium > Small), then context window, then free daily quota. `"model": "live"` is the same as `agent:live`. Full guide: [freellmapi-live.md](freellmapi-live.md). |
 
-The hard filters apply in both modes, because they are physical limits rather
+The hard filters apply in every mode, because they are physical limits rather
 than thrift: tool calling, context size, `local`, and availability. In
 [Rozkład Jazdy] a rejected non-stream answer moves on to the next strongest
 model.
 
 `[Rozkład Jazdy]` is the default everywhere: the embedded defaults, an empty
-spec, the Go library and the server. It stays the default until you change it.
+spec, the Go library and the server. It stays the default until you change it,
+with one exception: when a working FreeLLMAPI key is found (`FREELLM_API_KEY`)
+and no mode is set in your config or env, the default becomes `live`.
+`szmelc-router live` shows why.
 Ways to change it, from the narrowest scope to the widest:
 
 | Scope | How |
@@ -34,9 +38,10 @@ Ways to change it, from the narrowest scope to the widest:
 | permanent | `szmelc-router mode jako-tako` (writes `agentic.mode` to your config and keeps the rest of the file), or `agentic: {mode: jako-tako}` |
 
 Any spelling works: `[Rozkład Jazdy]`, `rozklad jazdy`, `rozklad`, `max`,
-`Jako Tako`, `jt`. Within one request, the model suffix beats the
+`Jako Tako`, `jt`, `live`, `po bogatości`. Within one request, the model suffix beats the
 `X-Freellm-Task-Mode` header, which beats metadata, which beats the default.
-`/v1/models` also lists `agent:rozklad-jazdy` and `agent:jako-tako`, so UI
+`/v1/models` also lists `agent:rozklad-jazdy`, `agent:jako-tako`, `agent:live`
+and `live`, so UI
 clients can pick a mode from their model picker.
 
 ```bash

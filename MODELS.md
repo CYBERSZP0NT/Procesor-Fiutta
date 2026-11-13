@@ -49,7 +49,7 @@ All free under each vendor's ToS for the free tier; limits per key, per day.
 | **Cloudflare Workers AI** `CLOUDFLARE_API_KEY` | 10,000 neurons/day | `@cf/meta/llama-3.1-8b-instruct`, `@cf/deepseek/deepseek-r1-distill-qllama-8b` |
 
 Sidecars (optional; the router also treats these as upstreams):
-`freellmapi/freellmapi/auto` (tashfeenahmed's 34-vendor router if you run it)
+`freellmapi/auto`, `freellmapi/auto:smart` (tashfeenahmed's FreeLLMAPI router if you run it; see [docs/freellmapi-live.md](docs/freellmapi-live.md))
 and `llmcycle/<model>` (llmcycle server if you run it).
 
 ## 3. g4f keyless models (`g4f/<id>`) — no key, no account
