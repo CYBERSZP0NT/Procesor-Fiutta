@@ -21,10 +21,10 @@ FreeLLMAPI's marketing figure for stacking all vendor free tiers is
 
 | Alias | Chain (order = fallback) | Use for |
 |---|---|---|
-| `auto` | google/gemini-2.5-flash → groq/llama-3.3-70b → openrouter/deepseek-r1:free → g4f/gpt-4o-mini → ollama | default |
+| `auto` | google/gemini-2.5-flash → groq/gpt-oss-120b → openrouter/deepseek-r1:free → g4f/gpt-4o-mini → ollama | default |
 | `smart` | google/gemini-2.5-pro → openrouter free 70B → groq → g4f/o3-mini → ollama | quality |
-| `fast` | groq/llama-3.1-8b-instant → google/flash-lite → cerebras/llama3.1-8b → openrouter free 8B → g4f → ollama | low latency / tokens |
-| `code` | groq 70B → openrouter qwen-coder:free → g4f/gpt-4o → ollama qwen2.5-coder | coding |
+| `fast` | groq/gpt-oss-20b → google/flash-lite → cloudflare llama-3.3-70b → cerebras/llama3.1-8b → openrouter free 8B → g4f → ollama | low latency / tokens |
+| `code` | groq gpt-oss-120b → openrouter qwen-coder:free → g4f/gpt-4o → ollama qwen2.5-coder | coding |
 | `free` | g4f/gpt-4o-mini → g4f/llama-3.1-8b → ollama | **no keys at all** |
 | `local` | ollama → g4f | offline-ish / privacy |
 
@@ -37,16 +37,16 @@ All free under each vendor's ToS for the free tier; limits per key, per day.
 | Provider (env key) | Free cap (vendor-published) | Models worth routing |
 |---|---|---|
 | **Google AI Studio** `GOOGLE_API_KEY` | ~10–15 req/min, ~250 req/day (varies by model) | `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-2.5-pro`, `gemini-2.0-flash`, newer `gemini-3-*` previews |
-| **Groq** `GROQ_API_KEY` | ~14,400 req/day, 1M tokens/day (per-model caps) | `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `gemma2-9b-it`, `qwen-qwq-32b`, `deepseek-r1-distill-llama-70b` |
+| **Groq** `GROQ_API_KEY` | ~14,400 req/day, 1M tokens/day (per-model caps) | `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `qwen/qwen3.8-27b` (Llama 3.x ids were retired, 404) |
 | **OpenRouter** `OPENROUTER_API_KEY` | models tagged `:free`: 50 req/day, 1,000 req/mo (2,000/mo after $10 lifetime credits) | any `<vendor>/<model>:free` on openrouter.ai (DeepSeek, Qwen, Llama, GLM, Kimi …) |
 | **Cerebras** `CEREBRAS_API_KEY` | ~3,000 req/day free dev tier | `llama3.1-8b`, `llama-3.3-70b` (when available), `qwen3-*` |
 | **SambaNova** `SAMBANOVA_API_KEY` | 750M tokens/mo, 1,000 req/min | `DeepSeek-V3`, `Meta-Llama-3.1-70B-Instruct`, `Gemma3-27B` |
 | **Mistral** `MISTRAL_API_KEY` | 500k tokens/mo per free model | `mistral-small-latest`, `codestral-latest`, `open-mistral-nemo` |
-| **Z.ai / Zhipu** `ZAI_API_KEY` | daily request + RPM caps (GLM free tier) | `glm-4-flash`, `glm-4-air`, `glm-4-plus` (trial) |
+| **Z.ai / Zhipu** `ZAI_API_KEY` | prepaid balance; $0 accounts get error 1113 on every model | `glm-5.3-flash`, `glm-5.3`, `glm-4.5-air` (endpoint `api.z.ai/api/paas/v4`) |
 | **NVIDIA NIM** `NVIDIA_API_KEY` | 1,000 free req **per model** (one-time) | `meta/llama-3.1-70b-instruct`, `deepseek-ai/deepseek-r1`, `nvidia/nemotron-*` |
 | **GitHub Models** `GITHUB_TOKEN` | 15 req/min, 150 req/day | `gpt-4.1`, `gpt-4o`, `claude-3.5-sonnet`, `o4-mini`, `phi-4` |
-| **Cohere trial** `COHERE_API_KEY` | 10 req/min, 100 req/day | `command-r`, `command-r-plus` (trial key) |
-| **Cloudflare Workers AI** `CLOUDFLARE_API_KEY` | 10,000 neurons/day | `@cf/meta/llama-3.1-8b-instruct`, `@cf/deepseek/deepseek-r1-distill-qllama-8b` |
+| **Cohere trial** `COHERE_API_KEY` | 10 req/min, 100 req/day | `command-a-03-2025`, `command-a-plus-05-2026`, `command-r7b-12-2024` (OpenAI-compatible endpoint `api.cohere.ai/compatibility/v1`) |
+| **Cloudflare Workers AI** `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` | 10,000 neurons/day | `@cf/meta/llama-3.3-70b-instruct-fp8-fast`, `@cf/meta/llama-3.1-8b-instruct-fp8`, `@cf/google/gemma-4-26b-a4b-it` |
 
 Sidecars (optional; the router also treats these as upstreams):
 `freellmapi/auto`, `freellmapi/auto:smart` (tashfeenahmed's FreeLLMAPI router if you run it; see [docs/freellmapi-live.md](docs/freellmapi-live.md))

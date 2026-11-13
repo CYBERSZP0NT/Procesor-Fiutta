@@ -17,7 +17,7 @@ func main() {
 			{Name: "groq", BaseURL: "https://api.groq.com/openai/v1", KeyEnv: "GROQ_API_KEY", Kind: "keyed"},
 			{Name: "poll", BaseURL: "https://text.pollinations.ai/openai", Kind: "keyless"},
 		},
-		Routes: map[string][]string{"auto": {"groq/llama-3.3-70b-versatile", "poll/openai"}},
+		Routes: map[string][]string{"auto": {"groq/openai/gpt-oss-120b", "poll/openai"}},
 	})
 	if err != nil {
 		log.Fatal(err)
