@@ -192,12 +192,23 @@ type ModelSelector struct {
 	// Context is additional context (e.g. detected task type) for future
 	// semantic routing — currently unused by the default policy.
 	Context map[string]string
+	// Chain, when non-empty, is an already-resolved fallback chain (e.g.
+	// from the agentic task router). The RoutePolicy is skipped.
+	Chain []Model
 }
 
 // RoutePolicy expands a ModelSelector into an ordered []Model chain.
 // The default implementation is in internal/core (see router_policy.go).
 type RoutePolicy interface {
 	Resolve(ctx context.Context, sel ModelSelector, known map[string]Model) []Model
+}
+
+// KnownModelsPolicy is an optional RoutePolicy extension. Only policies
+// that return true get the live "provider/model" → Model map in Resolve;
+// all others receive nil, which spares one /models request per provider on
+// every chat request.
+type KnownModelsPolicy interface {
+	UsesKnownModels() bool
 }
 
 // SemanticRouteHook is an extension point for "route by prompt content"

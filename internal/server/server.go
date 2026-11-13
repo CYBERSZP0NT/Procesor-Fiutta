@@ -127,6 +127,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("GET /v1/notes", s.handleNotes)
 	mux.HandleFunc("GET /notes", s.handleNotes)
+	mux.HandleFunc("GET /v1/route", s.handleRouteCatalog)
+	mux.HandleFunc("POST /v1/route", s.handlePlan)
 	mux.HandleFunc("GET /v1/metrics", s.handleMetrics)
 	mux.HandleFunc("GET /metrics", s.handleMetrics)
 	mux.HandleFunc("GET /{$}", s.handleRoot)
@@ -357,6 +359,14 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Task-router hints: X-Freellm-Task header + OpenAI "metadata".
+	if s.router.IsTaskAlias(q.Model) {
+		if opts == nil {
+			opts = &router.RouteOpts{}
+		}
+		opts.Task = &router.TaskHints{Override: r.Header.Get("X-Freellm-Task"), Metadata: q.Metadata}
+	}
+
 	finish := flushFn(w)
 	chunkID := newChunkID()
 	completed := false
@@ -411,6 +421,10 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 			}, finish)
 		},
 		Serving: func(v string) { via.Store(v) },
+		// Runs in this goroutine: before the first byte (stream) and again
+		// with the final pick before the JSON body (non-stream). Header
+		// writes after the stream is committed are no-ops.
+		Task: func(d *router.TaskDecision) { setTaskHeaders(w.Header(), d) },
 	}
 
 	selector := q.Model
@@ -604,4 +618,21 @@ type OnceFirstRequestError struct{ Code int32 }
 
 func (e *OnceFirstRequestError) Error() string {
 	return "once: first request failed (code " + strconv.Itoa(int(e.Code)) + ")"
+}
+
+// setTaskHeaders exposes the task router's decision on the response.
+func setTaskHeaders(h http.Header, d *router.TaskDecision) {
+	h.Set("X-Freellm-Task", headerSafe(d.Header()))
+	h.Set("X-Freellm-Task-Reason", headerSafe(d.Reason))
+}
+
+// headerSafe keeps printable ASCII only (catalog ids come from user config).
+func headerSafe(s string) string {
+	b := []byte(s)
+	for i, c := range b {
+		if c < 0x20 || c > 0x7e {
+			b[i] = '?'
+		}
+	}
+	return string(b)
 }

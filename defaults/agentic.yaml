@@ -1,0 +1,99 @@
+# ============================================================================
+# freellm-router — agentic task router (embedded data)
+#
+# model "agent" (or "task", "agent:code:4", …) routes by WHAT the request
+# asks for instead of a fixed alias: role + complexity → required tier →
+# cheapest sufficient catalog entry first, stronger ones next (escalation),
+# weaker ones last (best effort).
+#
+# Principle: just enough. Tiny models sort and label, mid models chat and
+# write, strong ones code, review and plan, the strongest only for
+# complexity 4-5. Tiers, costs, speeds and context sizes are judgment calls,
+# not measurements — edit freely in your config (`agentic:` section; entries
+# and rules replace by id). Every pick explains itself (X-Freellm-Task*
+# headers, POST /v1/route, `freellm-router route`).
+#
+#   tier   1 tiny (≤8B) · 2 small/mid · 3 70B-class · 4 strong · 5 strongest
+#   cost   0 free/local · 1 free tier with quota · 2+ burns paid credits
+#   speed  1 slow · 2 normal · 3 fast
+#   where  filled from the provider's kind (local|keyless|keyed|scraper|…)
+# ============================================================================
+
+aliases: [agent, task]
+below_tier_fallback: true   # weaker models as a last resort instead of a 502
+escalations: 1              # empty/filtered non-stream answer → retry one tier up
+
+roles:
+  classify: 1
+  extract: 1
+  chat: 2
+  summarize: 2
+  translate: 2
+  write: 3
+  research: 3
+  review: 4
+  plan: 4
+  code: 4
+  reason: 4
+
+complexity:   # complexity 1-5 → tier adjustment
+  1: -1
+  2: 0
+  3: 0
+  4: 1
+  5: 2
+
+catalog:
+  # ── tier 1: labels, yes/no, short fields ─────────────────────────────────
+  - {id: local-llama-1b,   model: "ollama/llama3.2:1b",         tier: 1, cost: 0, speed: 3, context: 4096,  tools: false, good_at: [classify, extract]}
+  - {id: local-llama-3b,   model: "ollama/llama3.2:3b",         tier: 1, cost: 0, speed: 3, context: 4096,  tools: true,  good_at: [classify, extract, chat]}
+  - {id: groq-llama-8b,    model: "groq/llama-3.1-8b-instant",  tier: 1, cost: 1, speed: 3, context: 6000,  tools: true,  good_at: [classify, extract, chat]}
+  - {id: cerebras-llama-8b, model: "cerebras/llama3.1-8b",      tier: 1, cost: 1, speed: 3, context: 8000,  tools: true,  good_at: [classify, extract]}
+  - {id: zen-llama-8b,     model: "opencode_zen/llama-3.1-8b",  tier: 1, cost: 0, speed: 2, context: 8000,  tools: false, good_at: [classify, chat]}
+
+  # ── tier 2: chat, summaries, translation ─────────────────────────────────
+  - {id: gemini-flash-lite, model: "google/gemini-2.5-flash-lite", tier: 2, cost: 1, speed: 3, context: 1000000, tools: true, good_at: [summarize, extract, translate, chat, write]}
+  - {id: mistral-small,    model: "mistral/mistral-small-latest", tier: 2, cost: 1, speed: 2, context: 32000, tools: true,  good_at: [translate, write, summarize]}
+  - {id: glm-4-flash,      model: "zai/glm-4-flash",            tier: 2, cost: 1, speed: 2, context: 128000, tools: true, good_at: [chat, translate, summarize]}
+  - {id: g4f-4o-mini,      model: "g4f/gpt-4o-mini",            tier: 2, cost: 0, speed: 2, context: 16000, tools: false, good_at: [chat, summarize, translate]}
+  - {id: pollinations-4o-mini, model: "pollinations/gpt-4o-mini", tier: 2, cost: 0, speed: 2, context: 8000, tools: false, good_at: [chat]}
+  - {id: local-qwen-coder-7b, model: "ollama/qwen2.5-coder:7b", tier: 2, cost: 0, speed: 2, context: 8192, tools: true, good_at: [code],
+     note: "The local coder: what 'local' code tasks get."}
+
+  # ── tier 3: writing, research, everyday code ─────────────────────────────
+  - {id: gemini-flash,     model: "google/gemini-2.5-flash",    tier: 3, cost: 1, speed: 3, context: 1000000, tools: true, good_at: [summarize, research, write, chat, translate]}
+  - {id: groq-llama-70b,   model: "groq/llama-3.3-70b-versatile", tier: 3, cost: 1, speed: 3, context: 12000, tools: true, good_at: [chat, write, code]}
+  - {id: or-qwen-coder-32b, model: "openrouter/qwen/qwen-2.5-coder-32b-instruct:free", tier: 3, cost: 0, speed: 2, context: 32000, tools: false, good_at: [code]}
+  - {id: together-llama-70b, model: "together/meta-llama/Llama-3.3-70B-Instruct", tier: 3, cost: 2, speed: 2, context: 128000, tools: true, good_at: [write, research]}
+  - {id: g4f-4o,           model: "g4f/gpt-4o",                 tier: 3, cost: 0, speed: 1, context: 16000, tools: false, good_at: [write, chat, research]}
+  - {id: pollinations-4o,  model: "pollinations/gpt-4o",        tier: 3, cost: 0, speed: 2, context: 8000,  tools: false, good_at: [write, chat]}
+
+  # ── tier 4: code, reviews, plans, reasoning ──────────────────────────────
+  - {id: deepseek-chat,    model: "deepseek/deepseek-chat",     tier: 4, cost: 2, speed: 2, context: 64000, tools: true,  good_at: [code, review, write]}
+  - {id: github-gpt-4.1,   model: "github_models/gpt-4.1",      tier: 4, cost: 1, speed: 2, context: 8000,  tools: true,  good_at: [code, review, plan, write],
+     note: "GitHub Models free tier caps input at ~8k tokens."}
+  - {id: or-deepseek-r1,   model: "openrouter/deepseek/deepseek-r1:free", tier: 4, cost: 0, speed: 1, context: 32000, tools: false, good_at: [reason, plan, code]}
+  - {id: g4f-o3-mini,      model: "g4f/o3-mini",                tier: 4, cost: 0, speed: 1, context: 16000, tools: false, good_at: [reason, code]}
+  - {id: pollinations-o3,  model: "pollinations/o3",            tier: 4, cost: 0, speed: 1, context: 8000,  tools: false, good_at: [reason, plan]}
+
+  # ── tier 5: the hardest plans, reviews and proofs ────────────────────────
+  - {id: gemini-pro,       model: "google/gemini-2.5-pro",      tier: 5, cost: 2, speed: 1, context: 1000000, tools: true, good_at: [plan, review, code, research, reason]}
+  - {id: deepseek-reasoner, model: "deepseek/deepseek-reasoner", tier: 5, cost: 2, speed: 1, context: 64000, tools: false, good_at: [reason, plan, code]}
+
+rules:
+  - id: sorting-stays-cheap
+    when: {role: [classify, extract], complexity_max: 4}
+    max_tier: 2
+    note: "Sorting and pulling out fields never needs more than a small model."
+  - id: code-prefers-coders
+    when: {role: code}
+    prefer: [deepseek-chat, github-gpt-4.1, or-qwen-coder-32b, local-qwen-coder-7b]
+    note: "Among equal tiers, models known for code go first."
+  - id: hardest-thinking
+    when: {role: [plan, review, reason], complexity_min: 5}
+    prefer: [gemini-pro, deepseek-reasoner]
+    note: "The hardest plans, reviews and proofs: the strongest reasoners first."
+  - id: local-code-is-small
+    when: {role: code, local: true}
+    max_tier: 2
+    note: "Local only means this machine: cap the tier so the local coder qualifies."

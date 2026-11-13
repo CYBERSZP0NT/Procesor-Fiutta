@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/silverx/freellm-router/defaults"
+	"github.com/silverx/freellm-router/internal/agentic"
 	"gopkg.in/yaml.v3"
 )
 
@@ -35,6 +36,8 @@ type Config struct {
 	Logging   LoggingConfig       `yaml:"logging"`
 	HTTP      HTTPConfig          `yaml:"http,omitempty"`
 	ACL       map[string][]string `yaml:"routes_acl,omitempty"` // route → allowed key names/values
+	// Agentic overlays the embedded task-router spec (defaults/agentic.yaml).
+	Agentic agentic.Spec `yaml:"agentic,omitempty"`
 }
 
 // Provider is one routable inference source entry.
@@ -283,6 +286,7 @@ func applyEnv(c *Config) *Config {
 //	– Other sections: full override when overlay field is non-zero
 func merge(base, overlay *Config) *Config {
 	out := *base
+	out.Agentic = base.Agentic.Merge(overlay.Agentic)
 
 	// Routes: overlay wins per-name
 	if len(overlay.Routes) > 0 {
@@ -547,6 +551,18 @@ func (c *Config) Validate() error {
 				problems = append(problems, "server.auth.names: name and value must both be non-empty")
 			}
 		}
+	}
+
+	// Agentic task router: the effective spec (embedded defaults + the
+	// agentic: section) must reference configured providers only.
+	if base, err := agentic.Default(); err != nil {
+		problems = append(problems, err.Error())
+	} else {
+		known := make(map[string]bool, len(c.Providers))
+		for _, p := range c.Providers {
+			known[strings.ToLower(p.Name)] = true
+		}
+		problems = append(problems, base.Merge(c.Agentic).Validate(known)...)
 	}
 
 	if len(problems) > 0 {

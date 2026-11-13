@@ -3,6 +3,41 @@
 All notable changes to freellm-router. Format loosely follows Keep a
 Changelog.
 
+## [Unreleased]
+
+### Added
+- **Agentic task router** (`internal/agentic`, `defaults/agentic.yaml`):
+  `model: "agent"` / `"task"` classifies the last user message (role +
+  complexity 1-5, EN+PL cues), computes the "just enough" tier, and routes
+  the cheapest sufficient model first → stronger (escalation) → weaker
+  (best effort). Hard filters: tool calling, context size, local-only,
+  availability (keys, daemon, *pulled* Ollama models, cooldown). Non-stream
+  quality gate re-picks one tier up on empty/filtered answers. Overrides:
+  `agent:code:4`, `X-Freellm-Task`, `metadata.task`. Every pick carries a
+  reason and every candidate's "why it lost".
+- `GET /v1/route` (catalog + availability), `POST /v1/route` (decision
+  preview, no upstream call), `X-Freellm-Task*` response headers, task
+  aliases in `/v1/models`.
+- CLI `route` (preview, `--all`, `--catalog`, `--role/--complexity/--tools/--local`);
+  `chat --via` also prints the task reason.
+- `pkg/router`: `IsTaskAlias`, `PlanTask`, `TaskSpec`, `TaskAvailability`,
+  `TaskAliases`, `RouteOpts.Task`, `Sinks.Task`, `Config.Agentic`.
+- `agentic:` config section, validated by `config validate`.
+- `internal/server` tests (httptest).
+
+### Fixed
+- `cmd/freellm-router/main.go` was never committed: the bare
+  `freellm-router` pattern in `.gitignore` matched the directory, so
+  `make build`, CI and the Docker image could not build. Pattern anchored.
+- Every chat request fetched `/models` from **every** provider (43
+  sequential HTTP calls) to build a map the default policy never reads.
+  It is now only built for policies that implement `KnownModelsPolicy`.
+- `go.mod`: cobra marked as a direct dependency.
+- Plugin tests ran a committed Linux `bin/go-example` binary (`exec format
+  error` on macOS CI); they now build the plugin for the host platform.
+- CORS: `X-Freellm-Task` allowed as a request header; routing headers
+  exposed to browser clients.
+
 ## [v1.0.0-rc1] — 2026-11-02
 
 ### Added

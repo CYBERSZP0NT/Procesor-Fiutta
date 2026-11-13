@@ -1,5 +1,10 @@
 # freellm-router
 
+[![CI](https://github.com/CYBERSZP0NT/Procesor-Fiutta/actions/workflows/ci.yml/badge.svg)](https://github.com/CYBERSZP0NT/Procesor-Fiutta/actions/workflows/ci.yml)
+![Go](https://img.shields.io/github/go-mod/go-version/CYBERSZP0NT/Procesor-Fiutta)
+![OpenAI-compatible](https://img.shields.io/badge/API-OpenAI--compatible-412991)
+![Task router](https://img.shields.io/badge/routing-agentic%20task%20router-2ea44f)
+
 **One static Go binary** in front of *all* your free and low-cost LLM
 capacity: vendor free tiers (Google, Groq, Cerebras, Together, DeepSeek, …),
 keyless endpoints (pollinations, g4f, AI Horde, …), local **Ollama**, sidecars
@@ -68,6 +73,32 @@ print(c.chat.completions.create(
 If provider A 429s, provider B just takes over — the client sees one
 `model=free` request, as intended.
 
+## Agentic task router — `model: "agent"`
+
+Built in, no extra service. Instead of a fixed chain, `agent` picks the
+model **per request**:
+
+1. It classifies the last user message into a role (`chat`, `code`,
+   `review`, `plan`, `summarize`, …) and a complexity from 1 to 5.
+2. It works out the tier that is *just enough*.
+3. It routes the cheapest sufficient model first, then stronger ones as
+   escalation, then weaker ones as a best effort.
+
+A tiny model says hi, a 70B writes the mail, and the strongest model you have
+is kept for the hard refactor. Empty or filtered non-stream answers are
+retried one tier up. Every pick explains itself:
+
+```bash
+freellm-router route "refactor this Go service for concurrency" --all   # preview + why each model lost
+curl -si localhost:8787/v1/chat/completions -d '{"model":"agent","messages":[{"role":"user","content":"hi"}]}' | grep -i x-freellm-task
+curl -s localhost:8787/v1/route -d '{"model":"agent:code:4","messages":[{"role":"user","content":"x"}]}'
+```
+
+You can force the classification with `agent:code:4`, the `X-Freellm-Task`
+header or `metadata.task`. Tiers, rules and the catalog are data
+([`defaults/agentic.yaml`](defaults/agentic.yaml) plus an `agentic:` section
+in your config). Full guide: [docs/agentic.md](docs/agentic.md).
+
 ## Zero-key stack (Docker)
 
 ```bash
@@ -81,8 +112,8 @@ curl -s http://localhost:8787/v1/chat/completions \
 
 | Shape | What |
 |---|---|
-| **CLI** | `chat`, `models`, `probe`, `providers (list/add/remove/test)`, `notes`, `stats`, `config (path/show/validate/init)`, `serve` |
-| **Server** | `POST /v1/chat/completions`, `GET /v1/models`, `GET /v1/health`, `GET /v1/notes`, `GET /v1/metrics` (Prometheus text format) — plus middleware: logging → CORS → auth (bearer, constant-time) → rate-limit → usage journal → panic-recover |
+| **CLI** | `chat`, `route`, `models`, `probe`, `providers (list/add/remove/test)`, `notes`, `stats`, `config (path/show/validate/init)`, `serve` |
+| **Server** | `POST /v1/chat/completions`, `GET /v1/models`, `GET /v1/health`, `GET /v1/notes`, `GET /v1/metrics` (Prometheus text format), `GET|POST /v1/route` (task router) — plus middleware: logging → CORS → auth (bearer, constant-time) → rate-limit → usage journal → panic-recover |
 | **Go library** | `pkg/router` — embed the whole fallback engine in your Go service in < 30 lines; reference: [`example/embed.go`](example/embed.go) |
 | **Any-language plugins** | `impl: plugin` — any subprocess speaking stdio JSON-RPC (spec: [docs/plugin-protocol.md](docs/plugin-protocol.md)); references in `plugins/python-example` and `plugins/go-example` |
 | **Docker** | distroless image + compose examples (`docker/`) |
@@ -112,6 +143,7 @@ notes`, `models --tier`, and `GET /v1/notes`.
 
 | | |
 |---|---|
+| [docs/agentic.md](docs/agentic.md) | the agentic task router: classification, tiers, rules, overrides, config |
 | [docs/integrations.md](docs/integrations.md) | copy-paste blocks: OpenAI py/JS SDK, curl, Claude Code, Open WebUI, LibreChat, LiteLLM, MCP, Go embed |
 | [docs/adding-a-source.md](docs/adding-a-source.md) | the two supported onboarding paths (config line / plugin) |
 | [docs/plugin-protocol.md](docs/plugin-protocol.md) | stdio JSON-RPC spec + minimal reference impl |

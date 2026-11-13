@@ -147,6 +147,11 @@ func runChat(cmd *cobra.Command, args []string) error {
 
 	if chatOptsVar.showVia && !pJSON {
 		fmt.Fprintf(os.Stderr, "\n↳ via %s\n", via)
+		if r.IsTaskAlias(selector) {
+			if d, err := r.PlanTask(ctx, selector, messages, false, nil); err == nil {
+				fmt.Fprintf(os.Stderr, "↳ task %s\n", d.Reason)
+			}
+		}
 	}
 
 	return nil

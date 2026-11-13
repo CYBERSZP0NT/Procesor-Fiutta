@@ -15,3 +15,6 @@ var ProvidersYAML []byte
 
 //go:embed routes.yaml
 var RoutesYAML []byte
+
+//go:embed agentic.yaml
+var AgenticYAML []byte
